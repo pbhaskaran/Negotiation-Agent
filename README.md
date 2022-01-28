@@ -23,4 +23,4 @@ For VSCode devcontainer users: We included a devcontainer specification in the `
 - Test you agent through `run.py`
 
 ## More information
-[Documentation](https://tracinsy.ewi.tudelft.nl/pubtrac/GeniusWebPython/wiki/WikiStart)
+[More documentation can be found here](https://tracinsy.ewi.tudelft.nl/pubtrac/GeniusWebPython/wiki/WikiStart). Part of this documentation was written for the Java version of GeniusWeb, but classes en functionality is left identical as much as possible.
