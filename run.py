@@ -24,5 +24,11 @@ settings = {
 # run a session and obtain results in dictionaries
 results_trace, results_summary = run_session(settings)
 
-# run the session
-runner.run()
+# plot trace to html file
+plot_trace(results_trace, "results/trace_plot.html")
+
+# write results to file
+with open("results/results_trace.json", "w") as f:
+    f.write(json.dumps(results_trace, indent=2))
+with open("results/results_summary.json", "w") as f:
+    f.write(json.dumps(results_summary, indent=2))

@@ -1,1 +1,2 @@
 https://tracinsy.ewi.tudelft.nl/pubtrac/GeniusWebPython/export/70/geniuswebcore/dist/geniusweb-1.1.2.tar.gz
+plotly==5.1.0
