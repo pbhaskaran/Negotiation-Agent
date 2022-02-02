@@ -73,19 +73,3 @@ def plot_trace(results_trace: dict, plot_file: str):
     fig.update_xaxes(title_text="round", range=[0, index + 1], ticks="outside")
     fig.update_yaxes(title_text="utility", range=[0, 1], ticks="outside")
     fig.write_html(f"{os.path.splitext(plot_file)[0]}.html")
-    # os.chmod(f"{os.path.splitext(result_file)[0]}.html", 0o777)
-
-    # partyprofiles = result_trace["partyprofiles"]
-    # agents = [v["party"]["partyref"].split(".")[-1] for v in partyprofiles.values()]
-    # profiles = [v["profile"].split(":")[-1] for v in partyprofiles.values()]
-    # summary.append(
-    #     ",".join(
-    #         [
-    #             os.path.splitext(os.path.basename(result_file))[0],
-    #             *agents,
-    #             *profiles,
-    #             *[str(x) for x in (accept["y"] if accept["y"] else [0.0, 0.0])],
-    #             "True" if accept["y"] else "False",
-    #         ]
-    #     )
-    # )
