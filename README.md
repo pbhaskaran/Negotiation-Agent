@@ -22,7 +22,7 @@ For VSCode devcontainer users: We included a devcontainer specification in the `
 - Copy and rename the template agent's directory, files and classname.
 - Read through the code to familiarise yourself with its workings. The agent already works but is not very good.
 - Develop your agent in the copied directory. Make sure that all the files that you use are in the directory.
-- Test your agent through `run.py`, results will be returned as dictionaries and saved as json-file.
+- Test your agent through `run.py`, results will be returned as dictionaries and saved as json-file. A plot of the negotiation trace will also be saved.
 
 ## More information
 [More documentation can be found here](https://tracinsy.ewi.tudelft.nl/pubtrac/GeniusWebPython/wiki/WikiStart). Part of this documentation was written for the Java version of GeniusWeb, but classes en functionality is left identical as much as possible.
