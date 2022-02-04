@@ -2,7 +2,7 @@ import json
 import os
 
 from utils.plot_trace import plot_trace
-from utils.run_session import run_session
+from utils.runners import run_session
 
 # create results directory if it does not exist
 if not os.path.exists("results"):

@@ -1,5 +1,6 @@
-import json
+from itertools import permutations
 from typing import Tuple
+
 from geniusweb.profile.utilityspace.LinearAdditiveUtilitySpace import (
     LinearAdditiveUtilitySpace,
 )
@@ -81,6 +82,35 @@ def run_session(settings) -> Tuple[dict, dict]:
     results_trace, results_summary = process_results(results_class, results_dict)
 
     return results_trace, results_summary
+
+
+def run_tournament(tournament_settings: dict) -> Tuple[list, list]:
+    # create agent permutations, ensures that every agent plays against every other agent on both sides of a profile set.
+    agent_permutations = permutations(tournament_settings["agents"], 2)
+    profile_sets = tournament_settings["profile_sets"]
+    deadline_rounds = tournament_settings["deadline_rounds"]
+
+    results_summaries = []
+    tournament = []
+    for profiles in profile_sets:
+        # quick an dirty check
+        assert isinstance(profiles, list) and len(profiles) == 2
+        for agent_duo in agent_permutations:
+            # create session settings dict
+            settings = {
+                "agents": list(agent_duo),
+                "profiles": profiles,
+                "deadline_rounds": deadline_rounds,
+            }
+
+            # run a single negotiation session
+            _, results_summary = run_session(settings)
+
+            # assemble results
+            tournament.append(settings)
+            results_summaries.append(results_summary)
+
+    return tournament, results_summaries
 
 
 def process_results(results_class, results_dict):
