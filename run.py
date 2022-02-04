@@ -17,7 +17,7 @@ settings = {
         "agents.random_agent.random_agent.RandomAgent",
         "agents.template_agent.template_agent.TemplateAgent",
     ],
-    "profiles": ["domains/jobs/jobsprofileA.json", "domains/jobs/jobsprofileB.json"],
+    "profiles": ["domains/domain00/profileA.json", "domains/domain00/profileB.json"],
     "deadline_rounds": 200,
 }
 

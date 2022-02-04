@@ -19,7 +19,8 @@ tournament_settings = {
         "agents.stupid_agent.stupid_agent.StupidAgent",
     ],
     "profile_sets": [
-        ["domains/jobs/jobsprofileA.json", "domains/jobs/jobsprofileB.json"]
+        ["domains/domain00/profileA.json", "domains/domain00/profileB.json"],
+        ["domains/domain01/profileA.json", "domains/domain01/profileB.json"],
     ],
     "deadline_rounds": 200,
 }
