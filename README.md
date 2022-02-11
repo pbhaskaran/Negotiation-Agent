@@ -2,19 +2,19 @@
 This is a template repository for the Negotiation Practical Assignment of the course on Collaborative AI at the TU Delft. This template is aimed at students that want to implement their agent in Python.
 
 ## Overview
-- directories
+- directories:
     - `agents`: Contains directories with the agents. The `template_agent` directory contains the template for this assignment.
     - `domains`: Contains the domains which are problems over which the agents are supposed to negotiate.
     - `utils`: Arbitrary utilities (don't use).
-- files
+- files:
     - `run.py`: Main interface to test agents.
     - `requirements.txt`: Python dependencies for your agent.
     - `requirements_allowed.txt`: Additional dependencies that you are allowed to use (ask TA's if you need unlisted packages).
 
 ## Installation
-The agents will be run on Python 3.9, so we advise that you develop on Python 3.9 as well. The dependencies are listed in the `requirements.txt` file and can be installed through `pip install -r requirements`.
+We recommend using Python 3.9. The required dependencies are listed in the `requirements.txt` file and can be installed through `pip install -r requirements.txt`.
 
-As already mentioned, should you need any additional dependencies, you can ask the TA's of this course. A few of the most common dependencies are already listed in the `requirements_allowed.txt` file, based on a [prepackaged version of Anaconda](https://docs.anaconda.com/anaconda/packages/py3.9_linux-64/). If you require another package that is on this webpage, then that is likely to be no problem, **but ask first**.
+As already mentioned, should you need any additional dependencies, you can ask the TA's of this course. A few of the most common dependencies are already listed in `requirements_allowed.txt` file. If you require another package that is not listed, **ask first**.
 
 For VSCode devcontainer users: We included a devcontainer specification in the `.devcontainer` directory.
 
@@ -25,4 +25,4 @@ For VSCode devcontainer users: We included a devcontainer specification in the `
 - Test your agent through `run.py`, results will be returned as dictionaries and saved as json-file. A plot of the negotiation trace will also be saved.
 
 ## More information
-[More documentation can be found here](https://tracinsy.ewi.tudelft.nl/pubtrac/GeniusWebPython/wiki/WikiStart). Part of this documentation was written for the Java version of GeniusWeb, but classes en functionality is left identical as much as possible.
+[More documentation can be found here](https://tracinsy.ewi.tudelft.nl/pubtrac/GeniusWebPython/wiki/WikiStart). Part of this documentation was written for the Java version of GeniusWeb, but classes and functionality are left identical as much as possible.
