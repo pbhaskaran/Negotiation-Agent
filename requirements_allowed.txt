@@ -1,4 +1,4 @@
-https://tracinsy.ewi.tudelft.nl/pubtrac/GeniusWebPython/export/70/geniuswebcore/dist/geniusweb-1.1.2.tar.gz
+https://tracinsy.ewi.tudelft.nl/pubtrac/GeniusWebPython/export/83/geniuswebcore/dist/geniusweb-1.1.4.tar.gz
 absl-py==1.0.0
 astunparse==1.6.3
 cachetools==5.0.0
