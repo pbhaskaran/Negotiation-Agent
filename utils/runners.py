@@ -1,19 +1,20 @@
 from itertools import permutations
+from math import factorial
 from typing import Tuple
 
-from geniusweb.profile.utilityspace.LinearAdditiveUtilitySpace import (
-    LinearAdditiveUtilitySpace,
-)
-from geniusweb.profileconnection.ProfileConnectionFactory import (
-    ProfileConnectionFactory,
-)
+from geniusweb.profile.utilityspace.LinearAdditiveUtilitySpace import \
+    LinearAdditiveUtilitySpace
+from geniusweb.profileconnection.ProfileConnectionFactory import \
+    ProfileConnectionFactory
 from geniusweb.protocol.NegoSettings import NegoSettings
 from geniusweb.protocol.session.saop.SAOPState import SAOPState
-from geniusweb.simplerunner.ClassPathConnectionFactory import ClassPathConnectionFactory
+from geniusweb.simplerunner.ClassPathConnectionFactory import \
+    ClassPathConnectionFactory
 from geniusweb.simplerunner.NegoRunner import NegoRunner
 from pyson.ObjectMapper import ObjectMapper
 from uri.uri import URI
 
+from utils.ask_proceed import ask_proceed
 from utils.std_out_reporter import StdOutReporter
 
 
@@ -86,16 +87,24 @@ def run_session(settings) -> Tuple[dict, dict]:
 
 def run_tournament(tournament_settings: dict) -> Tuple[list, list]:
     # create agent permutations, ensures that every agent plays against every other agent on both sides of a profile set.
-    agent_permutations = permutations(tournament_settings["agents"], 2)
+    agents = tournament_settings["agents"]
     profile_sets = tournament_settings["profile_sets"]
     deadline_rounds = tournament_settings["deadline_rounds"]
+
+    num_sessions = (factorial(len(agents)) // factorial(len(agents) - 2)) * len(profile_sets)
+    if num_sessions > 100:
+        message = f"WARNING: this would run {num_sessions} negotiation sessions. Proceed?"
+        if not ask_proceed(message):
+            print("Exiting script")
+            exit()
+
 
     results_summaries = []
     tournament = []
     for profiles in profile_sets:
         # quick an dirty check
         assert isinstance(profiles, list) and len(profiles) == 2
-        for agent_duo in agent_permutations:
+        for agent_duo in permutations(agents, 2):
             # create session settings dict
             settings = {
                 "agents": list(agent_duo),
@@ -168,6 +177,7 @@ def process_results(results_class, results_dict):
                 results_summary[f"utility_{position}"] = 0
             results_summary["nash_product"] = 0
             results_summary["social_welfare"] = 0
+            results_summary["result"] = "failed"
     else:
         # something crashed crashed
         for actor in results_dict["connections"]:
