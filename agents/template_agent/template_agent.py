@@ -50,7 +50,7 @@ class TemplateAgent(DefaultParty):
             self._me = self._settings.getID()
 
             # progress towards the deadline has to be tracked manually through the use of the Progress object
-            self._progress = self._settings.getProgress()
+            self._progress: ProgressRounds = self._settings.getProgress()
 
             # the profile contains the preferences of the agent over the domain
             self._profile = ProfileConnectionFactory.create(
