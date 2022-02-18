@@ -6,6 +6,7 @@ This is a template repository for the Negotiation Practical Assignment of the co
     - `agents`: Contains directories with the agents. The `template_agent` directory contains the template for this assignment.
     - `domains`: Contains the domains which are problems over which the agents are supposed to negotiate.
     - `utils`: Arbitrary utilities (don't use).
+    - `submission_example`: Contains an example submission directory. See negotiation assignment document for more details.
 - files:
     - `run.py`: Main interface to test agents in single session runs.
     - `run_tournament.py: Main interface to test a set of agents in a tournament. Here, every agent will negotiate against every other agent in the set on every set of preferences profiles that is provided (see code).
