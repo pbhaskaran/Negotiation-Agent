@@ -17,6 +17,17 @@ from uri.uri import URI
 from utils.ask_proceed import ask_proceed
 from utils.std_out_reporter import StdOutReporter
 
+import json
+
+def get_pareto(file) -> list:
+    # Read from file
+    f = open(file, 'r')
+    data = json.load(f)
+    coordinates = []
+    # Get all the pairs of utility as those are the coordinates for the point on the pareto optimal frontier
+    for i in data['pareto_front']:
+        coordinates.append(i['utility'])
+    return coordinates
 
 def run_session(settings) -> Tuple[dict, dict]:
     agents = settings["agents"]
