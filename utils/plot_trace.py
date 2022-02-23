@@ -3,17 +3,18 @@ from collections import defaultdict
 
 import plotly.graph_objects as go
 
-def trace_pareto(points: list, accept_point: list):
+def trace_pareto(pareto_points: list, accept_point: list):
     text = []
     x = []
     y = []
-    # Keep track of all the points and the coordinates for hover over text
-    for p in points:
+    # Keep track of all the pareto optimal points and their coordinates for hover over text
+    for p in pareto_points:
         x.append(p[0])
         y.append(p[1])
         text.append(str(round(p[0], 3)) + ", " + str(round(p[1], 3)))
     # Create a figure
     fig = go.Figure()
+    # Add the pareto optimal frontier
     fig.add_trace(
         go.Scatter(
             mode="lines+markers",
