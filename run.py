@@ -2,7 +2,9 @@ import json
 import os
 
 from utils.plot_trace import plot_trace
+from utils.plot_trace import trace_pareto
 from utils.runners import run_session
+from utils.runners import get_pareto
 
 # create results directory if it does not exist
 if not os.path.exists("results"):
@@ -17,12 +19,24 @@ settings = {
         "agents.random_agent.random_agent.RandomAgent",
         "agents.template_agent.template_agent.TemplateAgent",
     ],
-    "profiles": ["domains/domain00/profileA.json", "domains/domain00/profileB.json"],
+    "profiles": ["domains/domain02/profileA.json", "domains/domain02/profileB.json"],
     "deadline_rounds": 200,
 }
 
 # run a session and obtain results in dictionaries
 results_trace, results_summary = run_session(settings)
+accept_point = []
+# Iterate through and find an accepting bid if there is one
+for index, action in enumerate(results_trace["actions"], 1):
+    if "Accept" in action:
+        offer = action["Accept"]
+        for agent, util in offer["utilities"].items():
+            accept_point.append(util)
+
+# Get the pareto optimal points
+pareto_file = "domains/domain02/specials.json"
+pareto_points = get_pareto(pareto_file)
+trace_pareto(pareto_points, accept_point)
 
 # plot trace to html file
 plot_trace(results_trace, "results/trace_plot.html")

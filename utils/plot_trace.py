@@ -3,6 +3,53 @@ from collections import defaultdict
 
 import plotly.graph_objects as go
 
+def trace_pareto(pareto_points: list, accept_point: list):
+    text = []
+    x = []
+    y = []
+    # Keep track of all the pareto optimal points and their coordinates for hover over text
+    for p in pareto_points:
+        x.append(p[0])
+        y.append(p[1])
+        text.append(str(round(p[0], 3)) + ", " + str(round(p[1], 3)))
+    # Create a figure
+    fig = go.Figure()
+    # Add the pareto optimal frontier
+    fig.add_trace(
+        go.Scatter(
+            mode="lines+markers",
+            x=x,
+            y=y,
+            marker={"color": "red", "size": 12},
+            name = "Pareto Optimal Frontier",
+            legendgroup= "Pareto Optimal Points",
+            hovertext=text,
+            hoverinfo="text",
+        )
+    )
+    # If there is exactly one accepted bid (2 coordinates)
+    if len(accept_point) == 2:
+        text = []
+        text.append(str(round(accept_point[0], 3)) + " , " + str(round(accept_point[1], 3)))
+        fig.add_trace(
+            go.Scatter(
+                mode="markers",
+                x=[accept_point[0]],
+                y=[accept_point[1]],
+                marker={"color": "green", "size": 12},
+                name= "Agreed upon bid",
+                hovertext=text,
+                hoverinfo="text",
+            )
+        )
+    fig.update_layout(
+        # width=1000,
+        height=800,
+    )
+    # Update the axes and write to html file
+    fig.update_xaxes(title_text="utility", range=[0, 1], ticks="outside")
+    fig.update_yaxes(title_text="utility", range=[0, 1], ticks="outside")
+    fig.write_html("results/pareto_plot.html")
 
 def plot_trace(results_trace: dict, plot_file: str):
     utilities = defaultdict(lambda: defaultdict(lambda: {"x": [], "y": [], "bids": []}))
