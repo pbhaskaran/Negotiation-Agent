@@ -107,38 +107,48 @@ class TemplateAgent(DefaultParty):
 
     # execute a turn
     def _myTurn(self):
+        # Get our next bid
+        next_bid = self._findBid()
         # check if the last received offer if the opponent is good enough
-        if self._isGood(self._last_received_bid):
+        if self._isGood(self._last_received_bid, next_bid):
             # if so, accept the offer
             action = Accept(self._me, self._last_received_bid)
         else:
-            # if not, find a bid to propose as counter offer
-            bid = self._findBid()
-            action = Offer(self._me, bid)
+            # if not, propose bid as counter offer
+            action = Offer(self._me, next_bid)
 
         # send the action
         self.getConnection().send(action)
 
     # method that checks if we would agree with an offer
-    def _isGood(self, bid: Bid) -> bool:
-        if bid is None:
+    def _isGood(self, last_bid: Bid, next_bid: Bid) -> bool:
+        if last_bid is None:
             return False
         profile = self._profile.getProfile()
 
         progress = self._progress.get(0)
 
-        # very basic approach that accepts if the offer is valued above 0.6 and
-        # 80% of the rounds towards the deadline have passed
-        return profile.getUtility(bid) > 0.6 and progress > 0.8
+        # Depending on how many rounds have already passed, adjust the constant value we ask for
+        # Combination of time-dependent, constant utility and next bid
+        if progress < 0.5:
+            return profile.getUtility(last_bid) > 0.8 and profile.getUtility(last_bid) > profile.getUtility(next_bid)
+        elif progress < 0.7:
+            return profile.getUtility(last_bid) > 0.7 and profile.getUtility(last_bid) > profile.getUtility(next_bid)
+        elif progress < 0.9:
+            return profile.getUtility(last_bid) > 0.6 and profile.getUtility(last_bid) > profile.getUtility(next_bid)
+        else:
+            return profile.getUtility(last_bid) > 0.5 and profile.getUtility(last_bid) > profile.getUtility(next_bid)
 
     def _findBid(self) -> Bid:
         # compose a list of all possible bids
         domain = self._profile.getProfile().getDomain()
         all_bids = AllBidsList(domain)
 
-        # take 50 attempts at finding a random bid that is acceptable to us
+        profile = self._profile.getProfile()
+
+        # take 50 attempts at finding a random bid that has utility better than 0.6
         for _ in range(50):
             bid = all_bids.get(randint(0, all_bids.size() - 1))
-            if self._isGood(bid):
+            if profile.getUtility(bid) > 0.6:
                 break
         return bid

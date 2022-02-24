@@ -3,7 +3,7 @@ from collections import defaultdict
 
 import plotly.graph_objects as go
 
-def trace_pareto(pareto_points: list, accept_point: list):
+def trace_pareto(pareto_points: list, accept_point: list, agents_involved: list):
     text = []
     x = []
     y = []
@@ -46,9 +46,12 @@ def trace_pareto(pareto_points: list, accept_point: list):
         # width=1000,
         height=800,
     )
+    # Get the name of the agents
+    xaxes_label = agents_involved[0].split("_")[1]
+    yaxes_label = agents_involved[1].split("_")[1]
     # Update the axes and write to html file
-    fig.update_xaxes(title_text="utility", range=[0, 1], ticks="outside")
-    fig.update_yaxes(title_text="utility", range=[0, 1], ticks="outside")
+    fig.update_xaxes(title_text="Utility of {} agent".format(xaxes_label), range=[0, 1], ticks="outside")
+    fig.update_yaxes(title_text="Utility of {} agent".format(yaxes_label), range=[0, 1], ticks="outside")
     fig.write_html("results/pareto_plot.html")
 
 def plot_trace(results_trace: dict, plot_file: str):
