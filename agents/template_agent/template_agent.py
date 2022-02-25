@@ -19,6 +19,7 @@ from geniusweb.issuevalue.ValueSet import ValueSet
 from geniusweb.party.Capabilities import Capabilities
 from geniusweb.party.DefaultParty import DefaultParty
 from geniusweb.profile.utilityspace.UtilitySpace import UtilitySpace
+from geniusweb.opponentmodel.FrequencyOpponentModel import FrequencyOpponentModel
 from geniusweb.profileconnection.ProfileConnectionFactory import (
     ProfileConnectionFactory,
 )
@@ -35,6 +36,10 @@ class TemplateAgent(DefaultParty):
         self.getReporter().log(logging.INFO, "party is initialized")
         self._profile = None
         self._last_received_bid: Bid = None
+        self._opponent_model: FrequencyOpponentModel = FrequencyOpponentModel.create()
+        self._optimal_bid_list = []
+        self._our_utilities = {}
+
 
     def notifyChange(self, info: Inform):
         """This is the entry point of all interaction with your agent after is has been initialised.
@@ -56,12 +61,21 @@ class TemplateAgent(DefaultParty):
             self._profile = ProfileConnectionFactory.create(
                 info.getProfile().getURI(), self.getReporter()
             )
+
+            self._opponent_model = self._opponent_model.With(newDomain=self._profile.getProfile().getDomain(),
+                                                             newResBid=0)
+
+            for key, value in self._profile.getProfile().getUtilities().items():
+                self._our_utilities[key] = value.getUtilities()
+            print(self._our_utilities)
         # ActionDone is an action send by an opponent (an offer or an accept)
         elif isinstance(info, ActionDone):
             action: Action = cast(ActionDone, info).getAction()
 
+
             # if it is an offer, set the last received bid
             if isinstance(action, Offer):
+                self._opponent_model = self._opponent_model.WithAction(action, self._progress)
                 self._last_received_bid = cast(Offer, action).getBid()
         # YourTurn notifies you that it is your turn to act
         elif isinstance(info, YourTurn):
@@ -127,18 +141,43 @@ class TemplateAgent(DefaultParty):
 
         progress = self._progress.get(0)
 
+
+
+
+
         # very basic approach that accepts if the offer is valued above 0.6 and
         # 80% of the rounds towards the deadline have passed
-        return profile.getUtility(bid) > 0.6 and progress > 0.8
+        return profile.getUtility(bid) > 0.9# and progress >= 0.8
 
     def _findBid(self) -> Bid:
         # compose a list of all possible bids
         domain = self._profile.getProfile().getDomain()
         all_bids = AllBidsList(domain)
+        profile = self._profile.getProfile()
+        progress = self._progress.get(0)
 
         # take 50 attempts at finding a random bid that is acceptable to us
-        for _ in range(50):
-            bid = all_bids.get(randint(0, all_bids.size() - 1))
-            if self._isGood(bid):
-                break
-        return bid
+        if progress < 0.5:
+            for _ in range(50):
+                bid = all_bids.get(randint(0, all_bids.size() - 1))
+                if self._isGood(bid):
+                    break
+            return bid
+        else:
+            combinations = []
+            for issue in self._profile.getProfile().getDomain().getIssues():
+                values = self._opponent_model.getCounts(issue)
+                print(values)
+                
+
+
+
+
+
+
+
+
+
+
+
+
