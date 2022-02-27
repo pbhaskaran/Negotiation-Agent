@@ -43,6 +43,7 @@ class TemplateAgent(DefaultParty):
         self._opponent_model: FrequencyOpponentModel = FrequencyOpponentModel.create()
         self._optimal_bid_list = []
         self._our_utilities = {}
+        self._thresh_map = {0.5: 0.9, 0.4: 0.8, 0.3: 0.7, 0.2: 0.4, 0.1: 0.1, 0: 0}
 
 
     def notifyChange(self, info: Inform):
@@ -78,6 +79,31 @@ class TemplateAgent(DefaultParty):
                 # print(res_dict)
                 self._our_utilities[key] = res_dict
                 #self._our_utilities[key] = collections.OrderedDict(sorted(value.getUtilities().items(), key=lambda kv: kv[1], reverse=True))
+
+
+            self._sorted_issue_weights = sorted(self._profile.getProfile().getWeights().items(), key=lambda kv: kv[1], reverse=True)
+
+            self._potential_list = {}
+
+            for issue, weight in self._sorted_issue_weights:
+                self._potential_list[issue] = []
+                # their_value = issueValues[issue]
+                # print("before: ", profile.getUtility(Bid(new_bid)))
+                utilities = self._our_utilities[issue]
+
+                for w, thresh in self._thresh_map.items():
+                    # print(f"{w}, {thresh}, {weight}")
+                    if weight > w:
+                        min_utility = thresh
+                        break
+                # print(f"{min_utility} and {issue}")
+                for value, utility in utilities.items():
+                    if utility > min_utility:
+                        self._potential_list[issue].append(value)
+
+            print("potential list: ", self._potential_list)
+
+
         # ActionDone is an action send by an opponent (an offer or an accept)
         elif isinstance(info, ActionDone):
             action: Action = cast(ActionDone, info).getAction()
@@ -195,8 +221,10 @@ class TemplateAgent(DefaultParty):
 
 
 
-        if progress < 1.95:
+        if progress < -0.2:
             return self._findBidStage1()
+        elif progress < 0.5:
+            return self._findBidStage2()
         else:
             combinations = {}
             for issue in domain.getIssues():
@@ -206,6 +234,8 @@ class TemplateAgent(DefaultParty):
                 # print("v: ", self._profile.getProfile().reser)
                 print(self._opponent_model.getCounts(issue))
                 
+
+
 
     def _findBidStage1(self):
         # compose a list of all possible bids
@@ -220,11 +250,11 @@ class TemplateAgent(DefaultParty):
         # Todo: more systematic: start changing issues which have more weight for us
         # print("HERE")
         # todo: only needs to be done once
-        sorted_issue_weights = sorted(profile.getWeights().items(), key=lambda kv: kv[1], reverse=True)
+
         change_counter = 0
         # print(self._our_utilities)
         new_bid = copy.deepcopy(bid.getIssueValues())
-        for issue, weight in sorted_issue_weights:
+        for issue, weight in self._sorted_issue_weights:
             # their_value = issueValues[issue]
             # print("before: ", profile.getUtility(Bid(new_bid)))
             utilities = self._our_utilities[issue]
@@ -236,6 +266,8 @@ class TemplateAgent(DefaultParty):
                 # print(bid)
                 # print(Bid(new_bid))
                 break
+
+        # CREATING A POTENTIAL LIST OF CHOICES
 
         return Bid(new_bid)
             # print("after: ", profile.getUtility(Bid(new_bid)))
@@ -251,7 +283,15 @@ class TemplateAgent(DefaultParty):
         # Aim: to get a bid above a certain thresh (do we put it in a pool or just do it per round?)
 
 
+    def _findBidStage2(self):
+        # compose a list of all possible bids
+        domain = self._profile.getProfile().getDomain()
+        all_bids = AllBidsList(domain)
+        profile = self._profile.getProfile()
+        progress = self._progress.get(0)
 
+        print(self._last_received_bid)
+        print(self._potential_list)
 
 
 

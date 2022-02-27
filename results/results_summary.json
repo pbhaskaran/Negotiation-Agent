@@ -1,10 +1,10 @@
 {
-  "num_offers": 201,
-  "agent_1": "HardlinerAgent",
-  "utility_1": 0,
+  "num_offers": 91,
+  "agent_1": "LinearAgent",
+  "utility_1": 0.8106833701,
   "agent_2": "TemplateAgent",
-  "utility_2": 0,
-  "nash_product": 0,
-  "social_welfare": 0,
-  "result": "failed"
+  "utility_2": 0.822720388,
+  "nash_product": 0.6669657367938197,
+  "social_welfare": 1.6334037581,
+  "result": "agreement"
 }
