@@ -27,6 +27,7 @@ from geniusweb.progress.ProgressRounds import ProgressRounds
 
 import operator
 import collections
+import copy
 
 
 class TemplateAgent(DefaultParty):
@@ -130,31 +131,47 @@ class TemplateAgent(DefaultParty):
 
     # execute a turn
     def _myTurn(self):
+        # Get our next bid
+        print(f"my turn, their last bid was: {self._profile.getProfile().getUtility(self._last_received_bid)} : {self._last_received_bid}")
+        next_bid = self._findBid()
+        print(f"I think of a bid: {self._profile.getProfile().getUtility(next_bid)} : {next_bid}")
         # check if the last received offer if the opponent is good enough
-        if self._isGood(self._last_received_bid):
+        if self._isGood(self._last_received_bid, next_bid):
+            print("their bid is either better than mine or sufficient enough so I accept")
             # if so, accept the offer
             action = Accept(self._me, self._last_received_bid)
         else:
-            # if not, find a bid to propose as counter offer
-            bid = self._findBid()
-            action = Offer(self._me, bid)
+            print("I counteroffer")
+            # if not, propose bid as counter offer
+            action = Offer(self._me, next_bid)
 
         # send the action
         self.getConnection().send(action)
 
     # method that checks if we would agree with an offer
-    # TODO: make it take a second argument which is the threshold so we can either manually put it in or have a function that reuces it over time
-    def _isGood(self, bid: Bid) -> bool:
-        if bid is None:
+    def _isGood(self, last_bid: Bid, next_bid: Bid) -> bool:
+        if last_bid is None:
             return False
         profile = self._profile.getProfile()
 
         progress = self._progress.get(0)
-
-        # very basic approach that accepts if the offer is valued above 0.6 and
-        # 80% of the rounds towards the deadline have passed
-        #todo: make 0.9 reduce over time (incorporate reservation value)
-        return profile.getUtility(bid) > 0.9# and progress >= 0.8
+        print(f"last bid: {profile.getUtility(last_bid)}")
+        print(f"next bid {profile.getUtility(next_bid)}")
+        # Depending on how many rounds have already passed, adjust the constant value we ask for
+        # Combination of time-dependent, constant utility and next bid
+        if progress < 0.5:
+            print("case 1")
+            print(profile.getUtility(last_bid))
+            return profile.getUtility(last_bid) > 0.8 and profile.getUtility(last_bid) >= profile.getUtility(next_bid)
+        elif progress < 0.7:
+            print("case 2")
+            return profile.getUtility(last_bid) > 0.7 and profile.getUtility(last_bid) >= profile.getUtility(next_bid)
+        elif progress < 0.9:
+            print("case 3")
+            return profile.getUtility(last_bid) > 0.6 and profile.getUtility(last_bid) >= profile.getUtility(next_bid)
+        else:
+            print("case 4")
+            return profile.getUtility(last_bid) > 0.5 and profile.getUtility(last_bid) >= profile.getUtility(next_bid)
 
     def _findBid(self) -> Bid:
         # compose a list of all possible bids
@@ -171,14 +188,14 @@ class TemplateAgent(DefaultParty):
                 bid = all_bids.get(randint(0, all_bids.size() - 1))
                 if profile.getUtility(bid) > profile.getUtility(best_bid):
                     best_bid = bid
-                if self._isGood(bid):
+                if profile.getUtility(bid) > 0.9:
                     best_bid = bid
                     break
             return best_bid
 
 
 
-        if progress < 0.95:
+        if progress < 1.95:
             return self._findBidStage1()
         else:
             combinations = {}
@@ -205,16 +222,17 @@ class TemplateAgent(DefaultParty):
         # todo: only needs to be done once
         sorted_issue_weights = sorted(profile.getWeights().items(), key=lambda kv: kv[1], reverse=True)
         change_counter = 0
-        issueValues = bid.getIssueValues()
         # print(self._our_utilities)
-        new_bid = bid.getIssueValues()
+        new_bid = copy.deepcopy(bid.getIssueValues())
         for issue, weight in sorted_issue_weights:
             # their_value = issueValues[issue]
             # print("before: ", profile.getUtility(Bid(new_bid)))
             utilities = self._our_utilities[issue]
             highest_value = next(iter(utilities))
             new_bid[issue] = highest_value
-            if profile.getUtility(Bid(new_bid)) > 0.7:
+            # if profile.getUtility(Bid(new_bid)) > 0.7:
+            print(f"trying: {profile.getUtility(Bid(new_bid))} : {new_bid}")
+            if self._isGood(Bid(new_bid), Bid(new_bid)):
                 # print(bid)
                 # print(Bid(new_bid))
                 break
