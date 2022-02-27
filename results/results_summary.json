@@ -1,5 +1,5 @@
 {
-  "num_offers": 91,
+  "num_offers": 89,
   "agent_1": "LinearAgent",
   "utility_1": 0.8106833701,
   "agent_2": "TemplateAgent",

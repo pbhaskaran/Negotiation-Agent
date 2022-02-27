@@ -44,6 +44,7 @@ class TemplateAgent(DefaultParty):
         self._optimal_bid_list = []
         self._our_utilities = {}
         self._thresh_map = {0.5: 0.9, 0.4: 0.8, 0.3: 0.7, 0.2: 0.4, 0.1: 0.1, 0: 0}
+        self._last_offered_bid = None
 
 
     def notifyChange(self, info: Inform):
@@ -169,6 +170,7 @@ class TemplateAgent(DefaultParty):
         else:
             print("I counteroffer")
             # if not, propose bid as counter offer
+            self._last_offered_bid = next_bid
             action = Offer(self._me, next_bid)
 
         # send the action
@@ -209,19 +211,11 @@ class TemplateAgent(DefaultParty):
         # In case we are the ones starting, offer a random bid that has a high utility for us
         if self._last_received_bid is None:
             # Store the best bid in case we don;t find a bid meeting our standards in the random sample
-            best_bid = all_bids.get(randint(0, all_bids.size() - 1))
-            for i, _ in enumerate(range(50)):
-                bid = all_bids.get(randint(0, all_bids.size() - 1))
-                if profile.getUtility(bid) > profile.getUtility(best_bid):
-                    best_bid = bid
-                if profile.getUtility(bid) > 0.9:
-                    best_bid = bid
-                    break
-            return best_bid
+            return self._get_random_bid(0.9)
 
 
 
-        if progress < -0.2:
+        if progress < 10.2:
             return self._findBidStage1()
         elif progress < 0.5:
             return self._findBidStage2()
@@ -235,7 +229,19 @@ class TemplateAgent(DefaultParty):
                 print(self._opponent_model.getCounts(issue))
                 
 
-
+    def _get_random_bid(self, thresh):
+        domain = self._profile.getProfile().getDomain()
+        all_bids = AllBidsList(domain)
+        profile = self._profile.getProfile()
+        best_bid = all_bids.get(randint(0, all_bids.size() - 1))
+        for i, _ in enumerate(range(50)):
+            bid = all_bids.get(randint(0, all_bids.size() - 1))
+            if profile.getUtility(bid) > profile.getUtility(best_bid):
+                best_bid = bid
+            if profile.getUtility(bid) > thresh:
+                best_bid = bid
+                break
+        return best_bid
 
     def _findBidStage1(self):
         # compose a list of all possible bids
@@ -269,7 +275,14 @@ class TemplateAgent(DefaultParty):
 
         # CREATING A POTENTIAL LIST OF CHOICES
 
-        return Bid(new_bid)
+        new_bid = Bid(new_bid)
+        print(f"Found bid {new_bid}")
+
+        if new_bid == self._last_offered_bid:
+            new_bid = self._get_random_bid(profile.getUtility(new_bid))
+            print(f"To avoid bidding the same thing I am trying a random bid")
+
+        return new_bid
             # print("after: ", profile.getUtility(Bid(new_bid)))
             # print(utilities)
             # print()
