@@ -25,6 +25,9 @@ from geniusweb.profileconnection.ProfileConnectionFactory import (
 )
 from geniusweb.progress.ProgressRounds import ProgressRounds
 
+import operator
+import collections
+
 
 class TemplateAgent(DefaultParty):
     """
@@ -66,8 +69,14 @@ class TemplateAgent(DefaultParty):
                                                              newResBid=0)
 
             for key, value in self._profile.getProfile().getUtilities().items():
-                self._our_utilities[key] = value.getUtilities()
-            print(self._our_utilities)
+                # self._our_utilities[key] = value.getUtilities()
+                res_dict = {}
+                s = sorted(value.getUtilities().items(), key=lambda kv: kv[1], reverse=True)
+                for item in s:
+                    res_dict[item[0]] = item[1]
+                # print(res_dict)
+                self._our_utilities[key] = res_dict
+                #self._our_utilities[key] = collections.OrderedDict(sorted(value.getUtilities().items(), key=lambda kv: kv[1], reverse=True))
         # ActionDone is an action send by an opponent (an offer or an accept)
         elif isinstance(info, ActionDone):
             action: Action = cast(ActionDone, info).getAction()
@@ -134,6 +143,7 @@ class TemplateAgent(DefaultParty):
         self.getConnection().send(action)
 
     # method that checks if we would agree with an offer
+    # TODO: make it take a second argument which is the threshold so we can either manually put it in or have a function that reuces it over time
     def _isGood(self, bid: Bid) -> bool:
         if bid is None:
             return False
@@ -141,12 +151,9 @@ class TemplateAgent(DefaultParty):
 
         progress = self._progress.get(0)
 
-
-
-
-
         # very basic approach that accepts if the offer is valued above 0.6 and
         # 80% of the rounds towards the deadline have passed
+        #todo: make 0.9 reduce over time (incorporate reservation value)
         return profile.getUtility(bid) > 0.9# and progress >= 0.8
 
     def _findBid(self) -> Bid:
@@ -156,19 +163,77 @@ class TemplateAgent(DefaultParty):
         profile = self._profile.getProfile()
         progress = self._progress.get(0)
 
-        # take 50 attempts at finding a random bid that is acceptable to us
-        if progress < 0.5:
-            for _ in range(50):
+        # In case we are the ones starting, offer a random bid that has a high utility for us
+        if self._last_received_bid is None:
+            # Store the best bid in case we don;t find a bid meeting our standards in the random sample
+            best_bid = all_bids.get(randint(0, all_bids.size() - 1))
+            for i, _ in enumerate(range(50)):
                 bid = all_bids.get(randint(0, all_bids.size() - 1))
+                if profile.getUtility(bid) > profile.getUtility(best_bid):
+                    best_bid = bid
                 if self._isGood(bid):
+                    best_bid = bid
                     break
-            return bid
+            return best_bid
+
+
+
+        if progress < 0.95:
+            return self._findBidStage1()
         else:
-            combinations = []
-            for issue in self._profile.getProfile().getDomain().getIssues():
+            combinations = {}
+            for issue in domain.getIssues():
                 values = self._opponent_model.getCounts(issue)
-                print(values)
+                for value in values:
+                    utility = self._opponent_model._getFraction(issue, value)
+                # print("v: ", self._profile.getProfile().reser)
+                print(self._opponent_model.getCounts(issue))
                 
+
+    def _findBidStage1(self):
+        # compose a list of all possible bids
+        domain = self._profile.getProfile().getDomain()
+        all_bids = AllBidsList(domain)
+        profile = self._profile.getProfile()
+        progress = self._progress.get(0)
+
+        # We get the last received bid
+        bid = self._last_received_bid
+        # THe bid is not good enough to accept so we choose the one that has the lowest utility for us and make it the highest
+        # Todo: more systematic: start changing issues which have more weight for us
+        # print("HERE")
+        # todo: only needs to be done once
+        sorted_issue_weights = sorted(profile.getWeights().items(), key=lambda kv: kv[1], reverse=True)
+        change_counter = 0
+        issueValues = bid.getIssueValues()
+        # print(self._our_utilities)
+        new_bid = bid.getIssueValues()
+        for issue, weight in sorted_issue_weights:
+            # their_value = issueValues[issue]
+            # print("before: ", profile.getUtility(Bid(new_bid)))
+            utilities = self._our_utilities[issue]
+            highest_value = next(iter(utilities))
+            new_bid[issue] = highest_value
+            if profile.getUtility(Bid(new_bid)) > 0.7:
+                # print(bid)
+                # print(Bid(new_bid))
+                break
+
+        return Bid(new_bid)
+            # print("after: ", profile.getUtility(Bid(new_bid)))
+            # print(utilities)
+            # print()
+
+        # print(bid.getIssueValues())
+        # print(self._profile.getProfile().getUtility(bid))
+        # for issue, value in bid.getIssueValues().items():
+        #     print(issue, value)
+        # Do this by sorting
+
+        # Aim: to get a bid above a certain thresh (do we put it in a pool or just do it per round?)
+
+
+
 
 
 

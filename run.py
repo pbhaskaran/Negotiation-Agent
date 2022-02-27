@@ -15,10 +15,10 @@ if not os.path.exists("results"):
 settings = {
     "agents": [
         #"agents.boulware_agent.boulware_agent.BoulwareAgent",
-        "agents.hardliner_agent.hardliner_agent.HardlinerAgent",
-        #"agents.linear_agent.linear_agent.LinearAgent",
-        #"agents.conceder_agent.conceder_agent.ConcederAgent",
-        #"agents.random_agent.random_agent.RandomAgent",
+        # "agents.hardliner_agent.hardliner_agent.HardlinerAgent",
+        "agents.linear_agent.linear_agent.LinearAgent",
+        # "agents.conceder_agent.conceder_agent.ConcederAgent",
+        # "agents.random_agent.random_agent.RandomAgent",
         "agents.template_agent.template_agent.TemplateAgent",
     ],
     "profiles": ["domains/domain00/profileA.json", "domains/domain00/profileB.json"],
