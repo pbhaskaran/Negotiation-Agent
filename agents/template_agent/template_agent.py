@@ -23,6 +23,7 @@ from geniusweb.profileconnection.ProfileConnectionFactory import (
     ProfileConnectionFactory,
 )
 from geniusweb.progress.ProgressRounds import ProgressRounds
+from geniusweb.opponentmodel.FrequencyOpponentModel import FrequencyOpponentModel
 
 
 class TemplateAgent(DefaultParty):
@@ -35,6 +36,7 @@ class TemplateAgent(DefaultParty):
         self.getReporter().log(logging.INFO, "party is initialized")
         self._profile = None
         self._last_received_bid: Bid = None
+        self._opponent_model: FrequencyOpponentModel = FrequencyOpponentModel.create()
 
     def notifyChange(self, info: Inform):
         """This is the entry point of all interaction with your agent after is has been initialised.
@@ -56,12 +58,16 @@ class TemplateAgent(DefaultParty):
             self._profile = ProfileConnectionFactory.create(
                 info.getProfile().getURI(), self.getReporter()
             )
+
+            self._opponent_model = self._opponent_model.With(newDomain=self._profile.getProfile().getDomain(),
+                                                             newResBid=0)
         # ActionDone is an action send by an opponent (an offer or an accept)
         elif isinstance(info, ActionDone):
             action: Action = cast(ActionDone, info).getAction()
 
             # if it is an offer, set the last received bid
             if isinstance(action, Offer):
+                self._opponent_model = self._opponent_model.WithAction(action, self._progress)
                 self._last_received_bid = cast(Offer, action).getBid()
         # YourTurn notifies you that it is your turn to act
         elif isinstance(info, YourTurn):
@@ -145,10 +151,25 @@ class TemplateAgent(DefaultParty):
         all_bids = AllBidsList(domain)
 
         profile = self._profile.getProfile()
+        progress = self._progress.get(0)
+        best_bid = all_bids.get(randint(0, all_bids.size() - 1))
 
-        # take 50 attempts at finding a random bid that has utility better than 0.6
-        for _ in range(50):
-            bid = all_bids.get(randint(0, all_bids.size() - 1))
-            if profile.getUtility(bid) > 0.6:
-                break
-        return bid
+        # In the first quarter of the game we offer random bids that have good utility for us while reading the opponent to estimate their utility
+        if progress < 0.25:
+            for _ in range(50):
+                bid = all_bids.get(randint(0, all_bids.size() - 1))
+                if profile.getUtility(bid) > profile.getUtility(best_bid):
+                    best_bid = bid
+                if self._isGood(bid, self._last_received_bid):
+                    break
+            return best_bid
+        else:
+            # Now we incorporate the utility of the opponent in our bid decisions
+            for _ in range(50):
+                bid = all_bids.get(randint(0, all_bids.size() - 1))
+                if profile.getUtility(bid) > profile.getUtility(best_bid):
+                    best_bid = bid
+                if self._isGood(bid, self._last_received_bid) and self._opponent_model.getUtility(bid) > 0.6:
+                    print(self._opponent_model.getUtility(bid))
+                    break
+            return best_bid
