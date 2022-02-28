@@ -2,7 +2,7 @@ import json
 import os
 
 from utils.plot_trace import plot_trace
-from utils.plot_trace import trace_pareto
+# from utils.plot_trace import trace_pareto
 from utils.runners import run_session
 from utils.runners import get_pareto
 
@@ -11,7 +11,7 @@ if not os.path.exists("results"):
     os.mkdir("results")
 
 # Current domain number
-domain = "00"
+domain = "03"
 
 # Settings to run a negotiation session:
 #   We need to specify the classpath of 2 agents to start a negotiation.
@@ -19,11 +19,12 @@ domain = "00"
 #   We need to specify a deadline of amount of rounds we can negotiate before we end without agreement
 settings = {
     "agents": [
-        #"agents.boulware_agent.boulware_agent.BoulwareAgent",
+        # "agents.boulware_agent.boulware_agent.BoulwareAgent",
         # "agents.hardliner_agent.hardliner_agent.HardlinerAgent",
-        "agents.linear_agent.linear_agent.LinearAgent",
+        # "agents.linear_agent.linear_agent.LinearAgent",
         # "agents.conceder_agent.conceder_agent.ConcederAgent",
         # "agents.random_agent.random_agent.RandomAgent",
+        "agents.v1.v1.V1",
         "agents.template_agent.template_agent.TemplateAgent",
     ],
     "profiles": ["domains/domain{}/profileA.json".format(domain), "domains/domain{}/profileB.json".format(domain)],
@@ -45,7 +46,7 @@ for index, action in enumerate(results_trace["actions"], 1):
 # Get the pareto optimal points
 pareto_file = "domains/domain{}/specials.json".format(domain)
 pareto_points = get_pareto(pareto_file)
-trace_pareto(pareto_points, accept_point, agents_involved)
+# trace_pareto(pareto_points, accept_point, agents_involved)
 
 # plot trace to html file
 plot_trace(results_trace, "results/trace_plot.html")

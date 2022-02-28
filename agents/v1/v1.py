@@ -30,7 +30,7 @@ import collections
 import copy
 
 
-class TemplateAgent(DefaultParty):
+class V1(DefaultParty):
     """
     Template agent that offers random bids until a bid with sufficient utility is offered.
     """
@@ -45,7 +45,6 @@ class TemplateAgent(DefaultParty):
         self._our_utilities = {}
         self._thresh_map = {0.5: 0.9, 0.4: 0.8, 0.3: 0.7, 0.2: 0.4, 0.1: 0.1, 0: 0}
         self._last_offered_bid = None
-
 
     def notifyChange(self, info: Inform):
         """This is the entry point of all interaction with your agent after is has been initialised.
@@ -79,10 +78,10 @@ class TemplateAgent(DefaultParty):
                     res_dict[item[0]] = item[1]
                 # print(res_dict)
                 self._our_utilities[key] = res_dict
-                #self._our_utilities[key] = collections.OrderedDict(sorted(value.getUtilities().items(), key=lambda kv: kv[1], reverse=True))
+                # self._our_utilities[key] = collections.OrderedDict(sorted(value.getUtilities().items(), key=lambda kv: kv[1], reverse=True))
 
-
-            self._sorted_issue_weights = sorted(self._profile.getProfile().getWeights().items(), key=lambda kv: kv[1], reverse=True)
+            self._sorted_issue_weights = sorted(self._profile.getProfile().getWeights().items(), key=lambda kv: kv[1],
+                                                reverse=True)
 
             self._potential_list = {}
 
@@ -108,7 +107,6 @@ class TemplateAgent(DefaultParty):
         # ActionDone is an action send by an opponent (an offer or an accept)
         elif isinstance(info, ActionDone):
             action: Action = cast(ActionDone, info).getAction()
-
 
             # if it is an offer, set the last received bid
             if isinstance(action, Offer):
@@ -159,7 +157,8 @@ class TemplateAgent(DefaultParty):
     # execute a turn
     def _myTurn(self):
         # Get our next bid
-        print(f"my turn, their last bid was: {self._profile.getProfile().getUtility(self._last_received_bid)} : {self._last_received_bid}")
+        # print(
+        #     f"my turn, their last bid was: {self._profile.getProfile().getUtility(self._last_received_bid)} : {self._last_received_bid}")
         next_bid = self._findBid()
         print(f"I think of a bid: {self._profile.getProfile().getUtility(next_bid)} : {next_bid}")
         # check if the last received offer if the opponent is good enough
@@ -215,8 +214,6 @@ class TemplateAgent(DefaultParty):
             # Store the best bid in case we don;t find a bid meeting our standards in the random sample
             return self._get_random_bid(0.9)
 
-
-
         if progress < 0.25:
             return self._findBidStage1()
         elif progress < 1.5:
@@ -229,7 +226,6 @@ class TemplateAgent(DefaultParty):
                     utility = self._opponent_model._getFraction(issue, value)
                 # print("v: ", self._profile.getProfile().reser)
                 print(self._opponent_model.getCounts(issue))
-                
 
     def _get_random_bid(self, thresh):
         domain = self._profile.getProfile().getDomain()
@@ -285,9 +281,9 @@ class TemplateAgent(DefaultParty):
             print(f"To avoid bidding the same thing I am trying a random bid")
 
         return new_bid
-            # print("after: ", profile.getUtility(Bid(new_bid)))
-            # print(utilities)
-            # print()
+        # print("after: ", profile.getUtility(Bid(new_bid)))
+        # print(utilities)
+        # print()
 
         # print(bid.getIssueValues())
         # print(self._profile.getProfile().getUtility(bid))
@@ -296,7 +292,6 @@ class TemplateAgent(DefaultParty):
         # Do this by sorting
 
         # Aim: to get a bid above a certain thresh (do we put it in a pool or just do it per round?)
-
 
     def _findBidStage2(self):
         # compose a list of all possible bids
@@ -322,13 +317,13 @@ class TemplateAgent(DefaultParty):
                         if potential_value in value_counts:
                             best_value = potential_value
                     else:
-                        if potential_value in value_counts :
+                        if potential_value in value_counts:
                             if value_counts[potential_value] > value_counts[best_value]:
                                 best_value = potential_value
                 if best_value is not None:
                     new_bid[issue] = best_value
                 else:
-                    #TODO: Cancel
+                    # TODO: Cancel
                     print("THERE SHOULD BE NO DEAL")
 
         new_bid = Bid(new_bid)
