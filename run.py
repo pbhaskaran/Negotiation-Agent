@@ -34,7 +34,7 @@ settings = {
 # run a session and obtain results in dictionaries
 results_trace, results_summary = run_session(settings)
 accept_point = []
-agents_involved = []
+agents_involved = settings["agents"]
 # Iterate through and find an accepting bid if there is one
 for index, action in enumerate(results_trace["actions"], 1):
     if "Accept" in action:
