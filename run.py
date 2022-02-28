@@ -11,7 +11,7 @@ if not os.path.exists("results"):
     os.mkdir("results")
 
 # Current domain number
-domain = "08"
+domain = "02"
 
 # Settings to run a negotiation session:
 #   We need to specify the classpath of 2 agents to start a negotiation.
@@ -19,7 +19,7 @@ domain = "08"
 #   We need to specify a deadline of amount of rounds we can negotiate before we end without agreement
 settings = {
     "agents": [
-        "agents.random_agent.random_agent.RandomAgent",
+        "agents.boulware_agent.boulware_agent.BoulwareAgent",
         "agents.template_agent.template_agent.TemplateAgent",
     ],
     "profiles": ["domains/domain{}/profileA.json".format(domain), "domains/domain{}/profileB.json".format(domain)],
@@ -29,7 +29,7 @@ settings = {
 # run a session and obtain results in dictionaries
 results_trace, results_summary = run_session(settings)
 accept_point = []
-agents_involved = []
+agents_involved = settings["agents"]
 # Iterate through and find an accepting bid if there is one
 for index, action in enumerate(results_trace["actions"], 1):
     if "Accept" in action:

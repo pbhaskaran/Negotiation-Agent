@@ -126,29 +126,37 @@ class TemplateAgent(DefaultParty):
             return False
         profile = self._profile.getProfile()
 
+        # If we get a bid with utility better than 0.9 at any time, accept it
+        if profile.getUtility(last_bid) > 0.9:
+            return True
+
         progress = self._progress.get(0)
 
         # Depending on how many rounds have already passed, adjust the constant value we ask for
         # Combination of time-dependent, constant utility and next bid
         if progress < 0.5:
-            return profile.getUtility(last_bid) > 0.8 and profile.getUtility(last_bid) > profile.getUtility(next_bid)
+            return profile.getUtility(last_bid) > 0.75 and profile.getUtility(last_bid) > profile.getUtility(next_bid)
         elif progress < 0.7:
-            return profile.getUtility(last_bid) > 0.7 and profile.getUtility(last_bid) > profile.getUtility(next_bid)
+            return profile.getUtility(last_bid) > 0.65 and profile.getUtility(last_bid) > profile.getUtility(next_bid)
         elif progress < 0.9:
-            return profile.getUtility(last_bid) > 0.6 and profile.getUtility(last_bid) > profile.getUtility(next_bid)
+            return profile.getUtility(last_bid) > 0.55 and profile.getUtility(last_bid) > profile.getUtility(next_bid)
         else:
-            return profile.getUtility(last_bid) > 0.5 and profile.getUtility(last_bid) > profile.getUtility(next_bid)
+            return profile.getUtility(last_bid) > 0.45 and profile.getUtility(last_bid) > profile.getUtility(next_bid)
 
     def _findBid(self) -> Bid:
         # compose a list of all possible bids
         domain = self._profile.getProfile().getDomain()
         all_bids = AllBidsList(domain)
-
+        progress = self._progress.get(0)
         profile = self._profile.getProfile()
 
         # take 50 attempts at finding a random bid that has utility better than 0.6
         for _ in range(50):
             bid = all_bids.get(randint(0, all_bids.size() - 1))
-            if profile.getUtility(bid) > 0.6:
-                break
+            if progress < 0.5:
+                if profile.getUtility(bid) > 0.65:
+                    break
+            else:
+                if profile.getUtility(bid) > 0.6:
+                    break
         return bid
