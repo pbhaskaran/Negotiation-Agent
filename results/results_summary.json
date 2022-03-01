@@ -1,10 +1,10 @@
 {
-  "num_offers": 92,
+  "num_offers": 1,
   "agent_1": "ConcederAgent",
-  "utility_1": 0.5522593542,
+  "utility_1": 0,
   "agent_2": "TemplateAgent",
-  "utility_2": 0.8992117929,
-  "nash_product": 0.4965981240359782,
-  "social_welfare": 1.4514711471,
-  "result": "agreement"
+  "utility_2": 0,
+  "nash_product": 0,
+  "social_welfare": 0,
+  "result": "failed"
 }

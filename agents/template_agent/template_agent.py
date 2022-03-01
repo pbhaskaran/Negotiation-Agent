@@ -159,7 +159,6 @@ class TemplateAgent(DefaultParty):
     def _myTurn(self):
         self._refresh_thresh_map()
         # print(self._thresh_map)
-        print("#############################################################", self._progress.get(0))
         # Get our next bid
         print(f"my turn, their last bid was: {self._profile.getProfile().getUtility(self._last_received_bid)} : {self._last_received_bid}")
         next_bid = self._findBid()
@@ -220,10 +219,10 @@ class TemplateAgent(DefaultParty):
 
 
 
-        if progress < 0.25:
-            return self._findBidStage1()
+        if progress < -1.25:
+            return self._get_random_bid(0.75)
         elif progress < 1:
-            return self._findBidStage2()
+            return self._modify_average_bid()
         # Never hit for now because we may not need a stage3
         else:
             return self._get_random_bid(0,9)
@@ -234,6 +233,71 @@ class TemplateAgent(DefaultParty):
 
         for key, value in self._thresh_map.items():
             self._thresh_map[key] = self._initial_thresh_map[key] - (self._initial_thresh_map[key] - self._final_thresh_map[key])*self._progress.get(0)*2
+
+
+    def _modify_average_bid(self):
+        domain = self._profile.getProfile().getDomain()
+        all_bids = AllBidsList(domain)
+        profile = self._profile.getProfile()
+        progress = self._progress.get(0)
+
+        # print(domain.getIssues())
+        # print(domain.getValues())
+
+        # FIRST WE CREATE A BID BASED ON THEIR AVERAGE BID
+
+        average_bid = {}
+
+        for issue in domain.getIssues():
+            value_counts = self._opponent_model.getCounts(issue)
+            mode_value = None
+            for value in domain.getValues(issue):
+                if value in value_counts:
+                    if mode_value is None:
+                        mode_value = value
+                    else:
+                        if value_counts[value] > value_counts[mode_value]:
+                            mode_value = value
+            average_bid[issue] = mode_value
+
+        print(average_bid)
+
+        # THEN WE RANDOMLY MODIFY THE AVERAGE BID UNTIL WE GET A GOOD ENOUGH UTILITY
+        # DONE BY MAKING PERMUTATIONS
+
+        for issue in domain.getIssuesValues():
+            print(issue)
+
+        # # FIRST WE CREATE A BID BASED ON THEIR AVERAGE BID
+        # average_bid = copy.deepcopy(self._last_received_bid.getIssueValues())
+        #
+        # for issue, value in self._last_received_bid.getIssueValues().items():
+        #     best_value = None
+        #     value_counts = self._opponent_model.getCounts(issue)
+        #     for
+        #     average_bid[issue]
+
+            # if value not in self._potential_list[issue]:
+            #     best_value = None
+            #     value_counts = self._opponent_model.getCounts(issue)
+            #     for potential_value in self._potential_list[issue]:
+            #         if best_value is None:
+            #             if potential_value in value_counts:
+            #                 best_value = potential_value
+            #         else:
+            #             if potential_value in value_counts:
+            #                 if value_counts[potential_value] > value_counts[best_value]:
+            #                     best_value = potential_value
+            #     if best_value is not None:
+            #         new_bid[issue] = best_value
+            #     else:
+            #         self._no_preferable_deal = True
+
+        new_bid = Bid(new_bid)
+
+        return new_bid
+
+
 
     def _get_random_bid(self, thresh):
         domain = self._profile.getProfile().getDomain()
