@@ -30,7 +30,7 @@ import collections
 import copy
 
 
-class V1(DefaultParty):
+class TemplateAgent(DefaultParty):
     """
     Template agent that offers random bids until a bid with sufficient utility is offered.
     """
@@ -76,9 +76,7 @@ class V1(DefaultParty):
                 s = sorted(value.getUtilities().items(), key=lambda kv: kv[1], reverse=True)
                 for item in s:
                     res_dict[item[0]] = item[1]
-                # print(res_dict)
                 self._our_utilities[key] = res_dict
-                # self._our_utilities[key] = collections.OrderedDict(sorted(value.getUtilities().items(), key=lambda kv: kv[1], reverse=True))
 
             self._sorted_issue_weights = sorted(self._profile.getProfile().getWeights().items(), key=lambda kv: kv[1],
                                                 reverse=True)
@@ -87,16 +85,12 @@ class V1(DefaultParty):
 
             for issue, weight in self._sorted_issue_weights:
                 self._potential_list[issue] = []
-                # their_value = issueValues[issue]
-                # print("before: ", profile.getUtility(Bid(new_bid)))
                 utilities = self._our_utilities[issue]
 
             for w, thresh in self._thresh_map.items():
-                # print(f"{w}, {thresh}, {weight}")
                 if weight > w:
                     min_utility = thresh
                     break
-            # print(f"{min_utility} and {issue}")
             for value, utility in utilities.items():
                 if utility > min_utility:
                     self._potential_list[issue].append(value)
@@ -157,8 +151,8 @@ class V1(DefaultParty):
     # execute a turn
     def _myTurn(self):
         # Get our next bid
-        # print(
-        #     f"my turn, their last bid was: {self._profile.getProfile().getUtility(self._last_received_bid)} : {self._last_received_bid}")
+        print(
+            f"my turn, their last bid was: {self._profile.getProfile().getUtility(self._last_received_bid)} : {self._last_received_bid}")
         next_bid = self._findBid()
         print(f"I think of a bid: {self._profile.getProfile().getUtility(next_bid)} : {next_bid}")
         # check if the last received offer if the opponent is good enough
@@ -167,8 +161,6 @@ class V1(DefaultParty):
             # if so, accept the offer
             action = Accept(self._me, self._last_received_bid)
         else:
-            # if self._progress == 1:
-            #     print("END")
             print(f"I counteroffer at time {self._progress}")
             # if not, propose bid as counter offer
             self._last_offered_bid = next_bid
@@ -214,18 +206,7 @@ class V1(DefaultParty):
             # Store the best bid in case we don;t find a bid meeting our standards in the random sample
             return self._get_random_bid(0.9)
 
-        if progress < 0.25:
-            return self._findBidStage1()
-        elif progress < 1.5:
-            return self._findBidStage2()
-        else:
-            combinations = {}
-            for issue in domain.getIssues():
-                values = self._opponent_model.getCounts(issue)
-                for value in values:
-                    utility = self._opponent_model._getFraction(issue, value)
-                # print("v: ", self._profile.getProfile().reser)
-                print(self._opponent_model.getCounts(issue))
+        return self._findBidStage1()
 
     def _get_random_bid(self, thresh):
         domain = self._profile.getProfile().getDomain()
@@ -252,26 +233,18 @@ class V1(DefaultParty):
         bid = self._last_received_bid
         # THe bid is not good enough to accept so we choose the one that has the lowest utility for us and make it the highest
         # Todo: more systematic: start changing issues which have more weight for us
-        # print("HERE")
         # todo: only needs to be done once
 
         change_counter = 0
         # print(self._our_utilities)
         new_bid = copy.deepcopy(bid.getIssueValues())
         for issue, weight in self._sorted_issue_weights:
-            # their_value = issueValues[issue]
-            # print("before: ", profile.getUtility(Bid(new_bid)))
             utilities = self._our_utilities[issue]
             highest_value = next(iter(utilities))
             new_bid[issue] = highest_value
-            # if profile.getUtility(Bid(new_bid)) > 0.7:
             print(f"trying: {profile.getUtility(Bid(new_bid))} : {new_bid}")
             if self._isGood(Bid(new_bid), Bid(new_bid)):
-                # print(bid)
-                # print(Bid(new_bid))
                 break
-
-        # CREATING A POTENTIAL LIST OF CHOICES
 
         new_bid = Bid(new_bid)
         print(f"Found bid {new_bid}")
@@ -281,9 +254,6 @@ class V1(DefaultParty):
             print(f"To avoid bidding the same thing I am trying a random bid")
 
         return new_bid
-        # print("after: ", profile.getUtility(Bid(new_bid)))
-        # print(utilities)
-        # print()
 
         # print(bid.getIssueValues())
         # print(self._profile.getProfile().getUtility(bid))
@@ -292,43 +262,6 @@ class V1(DefaultParty):
         # Do this by sorting
 
         # Aim: to get a bid above a certain thresh (do we put it in a pool or just do it per round?)
-
-    def _findBidStage2(self):
-        # compose a list of all possible bids
-        domain = self._profile.getProfile().getDomain()
-        all_bids = AllBidsList(domain)
-        profile = self._profile.getProfile()
-        progress = self._progress.get(0)
-
-        print(self._last_received_bid)
-        print(self._potential_list)
-
-        new_bid = copy.deepcopy(self._last_received_bid.getIssueValues())
-        print(new_bid)
-
-        # print(self._opponent_model.getCounts('issueA'))
-
-        for issue, value in self._last_received_bid.getIssueValues().items():
-            if value not in self._potential_list[issue]:
-                best_value = None
-                value_counts = self._opponent_model.getCounts(issue)
-                for potential_value in self._potential_list[issue]:
-                    if best_value is None:
-                        if potential_value in value_counts:
-                            best_value = potential_value
-                    else:
-                        if potential_value in value_counts:
-                            if value_counts[potential_value] > value_counts[best_value]:
-                                best_value = potential_value
-                if best_value is not None:
-                    new_bid[issue] = best_value
-                else:
-                    # TODO: Cancel
-                    print("THERE SHOULD BE NO DEAL")
-
-        new_bid = Bid(new_bid)
-
-        return new_bid
 
 
 

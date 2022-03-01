@@ -4,6 +4,7 @@ from typing import cast
 
 from geniusweb.actions.Accept import Accept
 from geniusweb.actions.Action import Action
+from geniusweb.actions.EndNegotiation import EndNegotiation
 from geniusweb.actions.Offer import Offer
 from geniusweb.actions.PartyId import PartyId
 from geniusweb.bidspace.AllBidsList import AllBidsList
@@ -45,6 +46,7 @@ class TemplateAgent(DefaultParty):
         self._our_utilities = {}
         self._thresh_map = {0.5: 0.9, 0.4: 0.8, 0.3: 0.7, 0.2: 0.4, 0.1: 0.1, 0: 0}
         self._last_offered_bid = None
+        self._no_preferable_deal = False
 
 
     def notifyChange(self, info: Inform):
@@ -77,9 +79,7 @@ class TemplateAgent(DefaultParty):
                 s = sorted(value.getUtilities().items(), key=lambda kv: kv[1], reverse=True)
                 for item in s:
                     res_dict[item[0]] = item[1]
-                # print(res_dict)
                 self._our_utilities[key] = res_dict
-                #self._our_utilities[key] = collections.OrderedDict(sorted(value.getUtilities().items(), key=lambda kv: kv[1], reverse=True))
 
 
             self._sorted_issue_weights = sorted(self._profile.getProfile().getWeights().items(), key=lambda kv: kv[1], reverse=True)
@@ -88,16 +88,12 @@ class TemplateAgent(DefaultParty):
 
             for issue, weight in self._sorted_issue_weights:
                 self._potential_list[issue] = []
-                # their_value = issueValues[issue]
-                # print("before: ", profile.getUtility(Bid(new_bid)))
                 utilities = self._our_utilities[issue]
 
             for w, thresh in self._thresh_map.items():
-                # print(f"{w}, {thresh}, {weight}")
                 if weight > w:
                     min_utility = thresh
                     break
-            # print(f"{min_utility} and {issue}")
             for value, utility in utilities.items():
                 if utility > min_utility:
                     self._potential_list[issue].append(value)
@@ -167,9 +163,10 @@ class TemplateAgent(DefaultParty):
             print("their bid is either better than mine or sufficient enough so I accept")
             # if so, accept the offer
             action = Accept(self._me, self._last_received_bid)
+        elif self._no_preferable_deal:
+            print("Ending negotiation because we did not find a preferable deal")
+            action = EndNegotiation(self._me)
         else:
-            # if self._progress == 1:
-            #     print("END")
             print(f"I counteroffer at time {self._progress}")
             # if not, propose bid as counter offer
             self._last_offered_bid = next_bid
@@ -219,16 +216,11 @@ class TemplateAgent(DefaultParty):
 
         if progress < 0.25:
             return self._findBidStage1()
-        elif progress < 1.5:
+        elif progress < 1:
             return self._findBidStage2()
+        # Never hit for now because we may not need a stage3
         else:
-            combinations = {}
-            for issue in domain.getIssues():
-                values = self._opponent_model.getCounts(issue)
-                for value in values:
-                    utility = self._opponent_model._getFraction(issue, value)
-                # print("v: ", self._profile.getProfile().reser)
-                print(self._opponent_model.getCounts(issue))
+            return self._get_random_bid(0,9)
                 
 
     def _get_random_bid(self, thresh):
@@ -256,26 +248,18 @@ class TemplateAgent(DefaultParty):
         bid = self._last_received_bid
         # THe bid is not good enough to accept so we choose the one that has the lowest utility for us and make it the highest
         # Todo: more systematic: start changing issues which have more weight for us
-        # print("HERE")
         # todo: only needs to be done once
 
         change_counter = 0
         # print(self._our_utilities)
         new_bid = copy.deepcopy(bid.getIssueValues())
         for issue, weight in self._sorted_issue_weights:
-            # their_value = issueValues[issue]
-            # print("before: ", profile.getUtility(Bid(new_bid)))
             utilities = self._our_utilities[issue]
             highest_value = next(iter(utilities))
             new_bid[issue] = highest_value
-            # if profile.getUtility(Bid(new_bid)) > 0.7:
             print(f"trying: {profile.getUtility(Bid(new_bid))} : {new_bid}")
             if self._isGood(Bid(new_bid), Bid(new_bid)):
-                # print(bid)
-                # print(Bid(new_bid))
                 break
-
-        # CREATING A POTENTIAL LIST OF CHOICES
 
         new_bid = Bid(new_bid)
         print(f"Found bid {new_bid}")
@@ -285,9 +269,6 @@ class TemplateAgent(DefaultParty):
             print(f"To avoid bidding the same thing I am trying a random bid")
 
         return new_bid
-            # print("after: ", profile.getUtility(Bid(new_bid)))
-            # print(utilities)
-            # print()
 
         # print(bid.getIssueValues())
         # print(self._profile.getProfile().getUtility(bid))
@@ -311,8 +292,6 @@ class TemplateAgent(DefaultParty):
         new_bid = copy.deepcopy(self._last_received_bid.getIssueValues())
         print(new_bid)
 
-        # print(self._opponent_model.getCounts('issueA'))
-
         for issue, value in self._last_received_bid.getIssueValues().items():
             if value not in self._potential_list[issue]:
                 best_value = None
@@ -328,8 +307,7 @@ class TemplateAgent(DefaultParty):
                 if best_value is not None:
                     new_bid[issue] = best_value
                 else:
-                    #TODO: Cancel
-                    print("THERE SHOULD BE NO DEAL")
+                    self._no_preferable_deal = True
 
         new_bid = Bid(new_bid)
 
