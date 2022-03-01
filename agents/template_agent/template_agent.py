@@ -26,9 +26,12 @@ from geniusweb.profileconnection.ProfileConnectionFactory import (
 )
 from geniusweb.progress.ProgressRounds import ProgressRounds
 
+
 import operator
 import collections
 import copy
+
+from agents.OurFrequencyOpponentModel import OurFrequencyOpponentModel
 
 
 class TemplateAgent(DefaultParty):
@@ -41,7 +44,7 @@ class TemplateAgent(DefaultParty):
         self.getReporter().log(logging.INFO, "party is initialized")
         self._profile = None
         self._last_received_bid: Bid = None
-        self._opponent_model: FrequencyOpponentModel = FrequencyOpponentModel.create()
+        self._opponent_model: FrequencyOpponentModel = OurFrequencyOpponentModel.create()
         self._optimal_bid_list = []
         self._our_utilities = {}
         self._thresh_map = {0.5: 0.9, 0.4: 0.8, 0.3: 0.7, 0.2: 0.4, 0.1: 0.1, 0: 0}
