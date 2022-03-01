@@ -1,10 +1,10 @@
 {
-  "num_offers": 102,
-  "agent_1": "BoulwareAgent",
-  "utility_1": 0,
+  "num_offers": 86,
+  "agent_1": "ConcederAgent",
+  "utility_1": 0.5649123822,
   "agent_2": "TemplateAgent",
-  "utility_2": 0,
-  "nash_product": 0,
-  "social_welfare": 0,
-  "result": "failed"
+  "utility_2": 0.9519188666,
+  "nash_product": 0.53775075459213,
+  "social_welfare": 1.5168312488,
+  "result": "agreement"
 }
