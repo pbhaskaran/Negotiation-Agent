@@ -19,15 +19,19 @@ from utils.std_out_reporter import StdOutReporter
 
 import json
 
-def get_pareto(file) -> list:
+def get_special_points(file) -> list:
     # Read from file
     f = open(file, 'r')
     data = json.load(f)
-    coordinates = []
+    special_points = []
     # Get all the pairs of utility as those are the coordinates for the point on the pareto optimal frontier
+    pareto_coordinates = []
     for i in data['pareto_front']:
-        coordinates.append(i['utility'])
-    return coordinates
+        pareto_coordinates.append(i['utility'])
+    special_points.append(pareto_coordinates)
+    special_points.append(list(data['nash']['utility']))
+    special_points.append(list(data['kalai']['utility']))
+    return special_points
 
 def run_session(settings) -> Tuple[dict, dict]:
     agents = settings["agents"]
