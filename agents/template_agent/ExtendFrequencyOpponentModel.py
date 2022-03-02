@@ -129,3 +129,10 @@ class ExtendFrequencyOpponentModel(FrequencyOpponentModel):
         freq: int = self._bidFrequencies[issue][value]
         # Add a lower bound of 0.2 for each value weight
         return round(max(Decimal(freq) / self._totalBids, Decimal(0.2)), FrequencyOpponentModel._DECIMALS)
+
+
+    def _getIssueWeight(self, issue: str) -> Decimal:
+        '''
+               @param issue the issue we want the weight of
+               '''
+        return round(self._issueWeights[issue] / sum(self._issueWeights.values()), ExtendFrequencyOpponentModel._DECIMALS)

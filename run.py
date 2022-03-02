@@ -11,7 +11,7 @@ if not os.path.exists("results"):
     os.mkdir("results")
 
 # Current domain number
-domain = "05"
+domain = "03"
 
 # Settings to run a negotiation session:
 #   We need to specify the classpath of 2 agents to start a negotiation.
