@@ -13,7 +13,7 @@ class ExtendFrequencyOpponentModel(FrequencyOpponentModel):
 
     def __init__(self, domain: Optional[Domain],
                  freqs: Dict[str, Dict[Value, int]],
-                 weights: Dict[str, int],
+                 weights: Dict[str, float],
                  total: int,
                  resBid: Optional[Bid]):
         '''
@@ -35,19 +35,19 @@ class ExtendFrequencyOpponentModel(FrequencyOpponentModel):
         self._issueWeights = weights
         self._totalBids = total
         self._resBid = resBid
-        self.epsilon = 0.25
+        self.epsilon: float = 0.25
 
     @staticmethod
     def create() -> "ExtendFrequencyOpponentModel":
         return ExtendFrequencyOpponentModel(None, {}, {}, 0, None)
 
     @staticmethod
-    def cloneMap1(weights: Dict[str, int]) -> Dict[str, int]:
+    def cloneMap1(weights: Dict[str, float]) -> Dict[str, float]:
         '''
         @param weights
         @return deep copy of weights map.
         '''
-        map: Dict[str, int] = {}
+        map: Dict[str, float] = {}
         for issue in weights:
             map[issue] = weights[issue]
         return map
@@ -59,7 +59,7 @@ class ExtendFrequencyOpponentModel(FrequencyOpponentModel):
         # FIXME merge already available frequencies?
         return ExtendFrequencyOpponentModel(newDomain,
                                       {iss: {} for iss in newDomain.getIssues()},
-                                      {iss: {10} for iss in newDomain.getIssues()},
+                                      {iss: 10.0 for iss in newDomain.getIssues()},
                                       0, newResBid)
 
     # Override
@@ -71,15 +71,21 @@ class ExtendFrequencyOpponentModel(FrequencyOpponentModel):
             return self
 
         bid: Bid = action.getBid()
-        print("---------------------------")
-        print("Bid", bid)
-        print("Last bid", lastBid)
-        print("---------------------------")
+        # print("---------------------------")
+        # print("Bid", bid)
+        # print("Last bid", lastBid)
+        # print("---------------------------")
         newFreqs: Dict[str, Dict[Value, int]] = self.cloneMap(self._bidFrequencies)
-        newWeights: Dict[str, int] = self.cloneMap1(self._issueWeights)
+        newWeights: Dict[str, float] = self.cloneMap1(self._issueWeights)
         for issue in self._domain.getIssues():  # type:ignore
             freqs: Dict[Value, int] = newFreqs[issue]
+            weight: float = newWeights[issue]
             value = bid.getValue(issue)
+            if lastBid != None:
+                previous_value = lastBid.getValue(issue)
+                if previous_value != value:
+                    newWeight = weight - self.epsilon
+                    newWeights[issue] = newWeight
             if value != None:
                 oldfreq = 0
                 if value in freqs:
