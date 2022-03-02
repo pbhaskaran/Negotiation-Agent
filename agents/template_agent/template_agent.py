@@ -36,7 +36,8 @@ class TemplateAgent(DefaultParty):
         self.getReporter().log(logging.INFO, "party is initialized")
         self._profile = None
         self._last_received_bid: Bid = None
-        self._opponent_model: FrequencyOpponentModel = FrequencyOpponentModel.create()
+        self._opponent_model: ExtendFrequencyOpponentModel = ExtendFrequencyOpponentModel.create()
+        self._our_utilities = {}
 
     def notifyChange(self, info: Inform):
         """This is the entry point of all interaction with your agent after is has been initialised.
@@ -165,6 +166,7 @@ class TemplateAgent(DefaultParty):
         # take 50 attempts at finding a random bid that has utility better than 0.6
         for _ in range(50):
             bid = all_bids.get(randint(0, all_bids.size() - 1))
+            print(self._opponent_model.getUtility(bid))
             if progress < 0.5:
                 if profile.getUtility(bid) > 0.65:
                     break

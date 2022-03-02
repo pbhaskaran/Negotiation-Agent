@@ -1,6 +1,7 @@
 from geniusweb.opponentmodel.FrequencyOpponentModel import FrequencyOpponentModel
 from geniusweb.issuevalue.Bid import Bid
 from geniusweb.utils import val, HASH, toStr
+from geniusweb.issuevalue.Domain import Domain
 from decimal import Decimal
 from geniusweb.actions.Action import Action
 from geniusweb.progress.Progress import Progress
@@ -10,8 +11,48 @@ from typing import Dict, Optional
 
 class ExtendFrequencyOpponentModel(FrequencyOpponentModel):
 
+    def __init__(self, domain: Optional[Domain],
+                 freqs: Dict[str, Dict[Value, int]],
+                 weights: Dict[str, Dict[Value, int]],
+                 total: int,
+                 resBid: Optional[Bid]):
+        '''
+        internal constructor. DO NOT USE, see create. Assumes the freqs keyset is
+        equal to the available issues.
+
+        @param domain the domain. Should not be None
+        @param freqs  the observed frequencies for all issue values. This map is
+                      assumed to be a fresh private-access only copy.
+        @param weights the issue weights
+        @param total  the total number of bids contained in the freqs map. This
+                      must be equal to the sum of the Integer values in the
+                      {@link #bidFrequencies} for each issue (this is not
+                      checked).
+        @param resBid the reservation bid. Can be null
+        '''
+        self._domain = domain
+        self._bidFrequencies = freqs
+        self._issueWeights = weights
+        self._totalBids = total
+        self._resBid = resBid
+        self.epsilon = 0.25
+
+    @staticmethod
+    def create() -> "ExtendFrequencyOpponentModel":
+        return ExtendFrequencyOpponentModel(None, {}, {}, 0, None)
+
     # Override
-    def WithAction(self, action: Action, progress: Progress) -> "FrequencyOpponentModel":
+    def With(self, newDomain: Domain, newResBid: Optional[Bid]) -> "ExtendFrequencyOpponentModel":
+        if newDomain == None:
+            raise ValueError("domain is not initialized")
+        # FIXME merge already available frequencies?
+        return ExtendFrequencyOpponentModel(newDomain,
+                                      {iss: {} for iss in newDomain.getIssues()},
+                                      {iss: {} for iss in newDomain.getIssues()},
+                                      0, newResBid)
+
+    # Override
+    def WithAction(self, action: Action, progress: Progress) -> "ExtendFrequencyOpponentModel":
         if self._domain == None:
             raise ValueError("domain is not initialized")
 
@@ -29,7 +70,7 @@ class ExtendFrequencyOpponentModel(FrequencyOpponentModel):
                     oldfreq = freqs[value]
                 freqs[value] = oldfreq + 1  # type:ignore
 
-        return FrequencyOpponentModel(self._domain, newFreqs,
+        return ExtendFrequencyOpponentModel(self._domain, newFreqs,
                                       self._totalBids + 1, self._resBid)
 
     # Override
