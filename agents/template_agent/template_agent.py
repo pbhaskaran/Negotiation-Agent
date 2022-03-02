@@ -19,11 +19,12 @@ from geniusweb.issuevalue.ValueSet import ValueSet
 from geniusweb.party.Capabilities import Capabilities
 from geniusweb.party.DefaultParty import DefaultParty
 from geniusweb.profile.utilityspace.UtilitySpace import UtilitySpace
+from geniusweb.opponentmodel.FrequencyOpponentModel import FrequencyOpponentModel
 from geniusweb.profileconnection.ProfileConnectionFactory import (
     ProfileConnectionFactory,
 )
 from geniusweb.progress.ProgressRounds import ProgressRounds
-
+from agents.template_agent.ExtendFrequencyOpponentModel import ExtendFrequencyOpponentModel
 
 class TemplateAgent(DefaultParty):
     """
@@ -35,6 +36,7 @@ class TemplateAgent(DefaultParty):
         self.getReporter().log(logging.INFO, "party is initialized")
         self._profile = None
         self._last_received_bid: Bid = None
+        self._opponent_model: FrequencyOpponentModel = FrequencyOpponentModel.create()
 
     def notifyChange(self, info: Inform):
         """This is the entry point of all interaction with your agent after is has been initialised.
@@ -56,12 +58,22 @@ class TemplateAgent(DefaultParty):
             self._profile = ProfileConnectionFactory.create(
                 info.getProfile().getURI(), self.getReporter()
             )
+
+            self._opponent_model = self._opponent_model.With(newDomain=self._profile.getProfile().getDomain(),
+                                                             newResBid=0)
+
+            for key, value in self._profile.getProfile().getUtilities().items():
+                self._our_utilities[key] = value.getUtilities()
+            print(self._our_utilities)
+
+
         # ActionDone is an action send by an opponent (an offer or an accept)
         elif isinstance(info, ActionDone):
             action: Action = cast(ActionDone, info).getAction()
 
             # if it is an offer, set the last received bid
             if isinstance(action, Offer):
+                self._opponent_model = self._opponent_model.WithAction(action, self._progress)
                 self._last_received_bid = cast(Offer, action).getBid()
         # YourTurn notifies you that it is your turn to act
         elif isinstance(info, YourTurn):
