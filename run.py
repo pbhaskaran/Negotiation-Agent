@@ -11,7 +11,7 @@ if not os.path.exists("results"):
     os.mkdir("results")
 
 # Current domain number
-domain = "03"
+domain = "02"
 
 # Settings to run a negotiation session:
 #   We need to specify the classpath of 2 agents to start a negotiation.
@@ -20,9 +20,9 @@ domain = "03"
 settings = {
     "agents": [
         # "agents.boulware_agent.boulware_agent.BoulwareAgent",
-        # "agents.random_agent.random_agent.RandomAgent",
-        # "agents.hardliner_agent.hardliner_agent.HardlinerAgent",
-        "agents.conceder_agent.conceder_agent.ConcederAgent",
+        "agents.random_agent.random_agent.RandomAgent",
+        #"agents.hardliner_agent.hardliner_agent.HardlinerAgent",
+        #"agents.conceder_agent.conceder_agent.ConcederAgent",
         "agents.template_agent.template_agent.TemplateAgent",
     ],
     "profiles": ["domains/domain{}/profileA.json".format(domain), "domains/domain{}/profileB.json".format(domain)],
