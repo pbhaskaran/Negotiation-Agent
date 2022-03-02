@@ -45,7 +45,6 @@ def run_session(settings) -> Tuple[dict, dict]:
 
     # file path to uri
     profiles_uri = [f"file:{x}" for x in profiles]
-
     # create full settings dictionary that geniusweb requires
     settings_full = {
         "SAOPSettings": {
@@ -77,7 +76,7 @@ def run_session(settings) -> Tuple[dict, dict]:
                     }
                 },
             ],
-            "deadline": {"DeadlineRounds": {"rounds": rounds, "durationms": 999}},
+            "deadline": {"DeadlineRounds": {"rounds": rounds, "durationms": 60000}},
         }
     }
 

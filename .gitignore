@@ -1,3 +1,13 @@
 .venv
 .vscode
 __pycache__
+BoulwareAgent.log
+results/pareto_plot.html
+results/results_summary.json
+results/results_trace.json
+results/trace_plot.html
+TemplateAgent.log
+.idea/workspace.xml
+ConcederAgent.log
+HardlinerAgent.log
+LinearAgent.log
