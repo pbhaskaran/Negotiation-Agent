@@ -172,6 +172,7 @@ class TemplateAgent(DefaultParty):
             else:
                 if profile.getUtility(bid) > 0.6:
                     break
+        self._opponent_model.getUtility(bid)
         # print(self._opponent_model.getUtility(bid))
         # print("Our Bid:", bid)
         return bid
