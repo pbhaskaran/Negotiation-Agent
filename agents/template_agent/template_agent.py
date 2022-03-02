@@ -34,7 +34,18 @@ class TemplateAgent(DefaultParty):
         super().__init__()
         self.getReporter().log(logging.INFO, "party is initialized")
         self._profile = None
+        self._last_offered_bid: Bid = None
         self._last_received_bid: Bid = None
+
+        # We keep track of the received bids thus far, sorted by our utility
+        self._received_bids = []
+        self._progress: ProgressRounds = None
+        self._e = None
+
+        self._current_phase = 1
+        # At which round of the negotiation should phase 2 and phase 3 begin:
+        self._phase_two_start_round = 30
+        self._phase_three_start_round = 175
 
     def notifyChange(self, info: Inform):
         """This is the entry point of all interaction with your agent after is has been initialised.
@@ -56,13 +67,16 @@ class TemplateAgent(DefaultParty):
             self._profile = ProfileConnectionFactory.create(
                 info.getProfile().getURI(), self.getReporter()
             )
+
         # ActionDone is an action send by an opponent (an offer or an accept)
         elif isinstance(info, ActionDone):
             action: Action = cast(ActionDone, info).getAction()
 
-            # if it is an offer, set the last received bid
+            # if it is an offer, set the last received bid and append it to the list of received bids
             if isinstance(action, Offer):
                 self._last_received_bid = cast(Offer, action).getBid()
+                self._received_bids.append(cast(Offer, action).getBid())
+
         # YourTurn notifies you that it is your turn to act
         elif isinstance(info, YourTurn):
             # execute a turn
@@ -105,43 +119,50 @@ class TemplateAgent(DefaultParty):
     def getDescription(self) -> str:
         return "Template agent for Collaborative AI course"
 
+    # This method updates the current_phase attribute of the agent
+    def _updateCurrentPhase(self):
+        current_round = self._progress.getCurrentRound()
+        if current_round >= self._phase_two_start_round:
+            self._current_phase = 2
+        if current_round >= self._phase_three_start_round:
+            self._current_phase = 3
+
     # execute a turn
     def _myTurn(self):
-        # Get our next bid
-        next_bid = self._findBid()
-        # check if the last received offer if the opponent is good enough
-        if self._isGood(self._last_received_bid, next_bid):
-            # if so, accept the offer
-            action = Accept(self._me, self._last_received_bid)
-        else:
-            # if not, propose bid as counter offer
-            action = Offer(self._me, next_bid)
-
-        # send the action
-        self.getConnection().send(action)
-
-    # method that checks if we would agree with an offer
-    def _isGood(self, last_bid: Bid, next_bid: Bid) -> bool:
-        if last_bid is None:
-            return False
         profile = self._profile.getProfile()
 
-        # If we get a bid with utility better than 0.9 at any time, accept it
-        if profile.getUtility(last_bid) > 0.9:
-            return True
+        # If we are making the first bid, we make the bid with the highest possible utility for ourselves (Agent Smith)
+        if self._last_received_bid is None:
+            next_bid = self._findBid()
+            self._last_offered_bid = next_bid
 
-        progress = self._progress.get(0)
+            action = Offer(self._me, next_bid)
+            self.getConnection().send(action)
+            return
 
-        # Depending on how many rounds have already passed, adjust the constant value we ask for
-        # Combination of time-dependent, constant utility and next bid
-        if progress < 0.5:
-            return profile.getUtility(last_bid) > 0.75 and profile.getUtility(last_bid) > profile.getUtility(next_bid)
-        elif progress < 0.7:
-            return profile.getUtility(last_bid) > 0.65 and profile.getUtility(last_bid) > profile.getUtility(next_bid)
-        elif progress < 0.9:
-            return profile.getUtility(last_bid) > 0.55 and profile.getUtility(last_bid) > profile.getUtility(next_bid)
+        # We received a bid so we check Acceptance Criteria
+        if self._isGood(profile):
+            action = Accept(self._me, self._last_received_bid)
+            self.getConnection().send(action)
+            return
+        # Received bid did not meet acceptance criteria, so we make a counter-offer
         else:
-            return profile.getUtility(last_bid) > 0.45 and profile.getUtility(last_bid) > profile.getUtility(next_bid)
+            next_bid = self._findBid()
+            self._last_offered_bid = next_bid
+
+            action = Offer(self._me, next_bid)
+            self.getConnection().send(action)
+
+    # method that checks if we would agree with an offer
+    def _isGood(self, profile) -> bool:
+        # We immediately accept if the proposed bid has utility > 0.9 for us
+        if profile.getUtility(self._last_received_bid) > 0.9:
+            return True
+        # If the opponent offers utility value exceeds that of our agent’s last offered bid -> we accept
+        elif self._last_offered_bid is not None and profile.getUtility(self._last_received_bid) > profile.getUtility(self._last_offered_bid):
+            return True
+        else:
+            return False
 
     def _findBid(self) -> Bid:
         # compose a list of all possible bids
@@ -160,3 +181,27 @@ class TemplateAgent(DefaultParty):
                 if profile.getUtility(bid) > 0.6:
                     break
         return bid
+
+    #   method that checks if we would agree with an offer
+    # def _isGood(self, last_bid: Bid, next_bid: Bid) -> bool:
+    #     if last_bid is None:
+    #         return False
+    #     profile = self._profile.getProfile()
+    #
+    #     # If we get a bid with utility better than 0.9 at any time, accept it
+    #     if profile.getUtility(last_bid) > 0.9:
+    #         return True
+    #
+    #     progress = self._progress.get(0)
+    #
+    #     # Depending on how many rounds have already passed, adjust the constant value we ask for
+    #     # Combination of time-dependent, constant utility and next bid
+    #     if progress < 0.5:
+    #         return profile.getUtility(last_bid) > 0.75 and profile.getUtility(last_bid) > profile.getUtility(next_bid)
+    #     elif progress < 0.7:
+    #         return profile.getUtility(last_bid) > 0.65 and profile.getUtility(last_bid) > profile.getUtility(next_bid)
+    #     elif progress < 0.9:
+    #         return profile.getUtility(last_bid) > 0.55 and profile.getUtility(last_bid) > profile.getUtility(next_bid)
+    #     else:
+    #         return profile.getUtility(last_bid) > 0.45 and profile.getUtility(last_bid) > profile.getUtility(next_bid)
+    #

@@ -19,10 +19,10 @@ domain = "02"
 #   We need to specify a deadline of amount of rounds we can negotiate before we end without agreement
 settings = {
     "agents": [
-        # "agents.boulware_agent.boulware_agent.BoulwareAgent",
+        "agents.boulware_agent.boulware_agent.BoulwareAgent",
         # "agents.conceder_agent.conceder_agent.ConcederAgent",
         # "agents.hardliner_agent.hardliner_agent.HardlinerAgent",
-        "agents.linear_agent.linear_agent.LinearAgent",
+        # "agents.linear_agent.linear_agent.LinearAgent",
         # "agents.random_agent.random_agent.RandomAgent",
         # "agents.stupid_agent.stupid_agent.StupidAgent",
         "agents.template_agent.template_agent.TemplateAgent",

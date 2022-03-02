@@ -11,3 +11,8 @@ TemplateAgent.log
 ConcederAgent.log
 HardlinerAgent.log
 LinearAgent.log
+.idea/inspectionProfiles/profiles_settings.xml
+.idea/misc.xml
+.idea/modules.xml
+.idea/Negotiation-Agent.iml
+.idea/vcs.xml
