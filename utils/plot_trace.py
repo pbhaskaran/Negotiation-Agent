@@ -3,12 +3,12 @@ from collections import defaultdict
 
 import plotly.graph_objects as go
 
-def trace_pareto(pareto_points: list, accept_point: list, agents_involved: list):
+def trace_special_points(special_points: list, accept_point: list, agents_involved: list):
     text = []
     x = []
     y = []
     # Keep track of all the pareto optimal points and their coordinates for hover over text
-    for p in pareto_points:
+    for p in special_points[0]:
         x.append(p[0])
         y.append(p[1])
         text.append(str(round(p[0], 3)) + ", " + str(round(p[1], 3)))
@@ -27,6 +27,35 @@ def trace_pareto(pareto_points: list, accept_point: list, agents_involved: list)
             hoverinfo="text",
         )
     )
+    # Add the Nash product point
+    nash_text = []
+    nash_text.append(str(round(special_points[1][0], 3)) + " , " + str(round(special_points[1][1], 3)))
+    fig.add_trace(
+        go.Scatter(
+            mode="markers",
+            x=[special_points[1][0]],
+            y=[special_points[1][1]],
+            marker={"color": "blue", "size": 13},
+            name="Nash Product" + ": [" + str(nash_text[0]) + "]",
+            hovertext=nash_text,
+            hoverinfo="text",
+        )
+    )
+    # Add the Kalai point
+    kalai_text = []
+    kalai_text.append(str(round(special_points[2][0], 3)) + " , " + str(round(special_points[2][1], 3)))
+    fig.add_trace(
+        go.Scatter(
+            mode="markers",
+            x=[special_points[2][0]],
+            y=[special_points[2][0]],
+            marker={"color": "black", "size": 13},
+            name="Kalai Point" + ": [" + str(kalai_text[0]) + "]",
+            hovertext=kalai_text,
+            hoverinfo="text",
+        )
+    )
+
     # If there is exactly one accepted bid (2 coordinates)
     if len(accept_point) == 2:
         text = []
@@ -37,7 +66,7 @@ def trace_pareto(pareto_points: list, accept_point: list, agents_involved: list)
                 x=[accept_point[0]],
                 y=[accept_point[1]],
                 marker={"color": "green", "size": 12},
-                name= "Agreed upon bid",
+                name= "Agreed upon bid" + ": [" + str(text[0]) + "]",
                 hovertext=text,
                 hoverinfo="text",
             )
