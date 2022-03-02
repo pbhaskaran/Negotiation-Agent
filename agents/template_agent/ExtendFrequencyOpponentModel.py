@@ -71,9 +71,10 @@ class ExtendFrequencyOpponentModel(FrequencyOpponentModel):
             return self
 
         bid: Bid = action.getBid()
-        print(bid)
         print("---------------------------")
-        print(lastBid)
+        print("Bid", bid)
+        print("Last bid", lastBid)
+        print("---------------------------")
         newFreqs: Dict[str, Dict[Value, int]] = self.cloneMap(self._bidFrequencies)
         newWeights: Dict[str, int] = self.cloneMap1(self._issueWeights)
         for issue in self._domain.getIssues():  # type:ignore

@@ -72,8 +72,8 @@ class TemplateAgent(DefaultParty):
         elif isinstance(info, ActionDone):
             action: Action = cast(ActionDone, info).getAction()
 
-            # if it is an offer, set the last received bid
-            if isinstance(action, Offer):
+            # if it is an offer, set the last received bid and it isn't from us
+            if isinstance(action, Offer) and not str(action.getActor()).__contains__("template"):
                 self._opponent_model = self._opponent_model.WithAction(action, self._last_received_bid, self._progress)
                 self._last_received_bid = cast(Offer, action).getBid()
         # YourTurn notifies you that it is your turn to act
@@ -167,11 +167,12 @@ class TemplateAgent(DefaultParty):
         for _ in range(50):
             bid = all_bids.get(randint(0, all_bids.size() - 1))
             # self._opponent_model.getUtility(bid)
-            print(self._opponent_model.getUtility(bid))
             if progress < 0.5:
                 if profile.getUtility(bid) > 0.65:
                     break
             else:
                 if profile.getUtility(bid) > 0.6:
                     break
+        # print(self._opponent_model.getUtility(bid))
+        print("Our Bid:", bid)
         return bid
