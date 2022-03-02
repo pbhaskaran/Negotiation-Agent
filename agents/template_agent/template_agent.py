@@ -19,10 +19,14 @@ from geniusweb.issuevalue.ValueSet import ValueSet
 from geniusweb.party.Capabilities import Capabilities
 from geniusweb.party.DefaultParty import DefaultParty
 from geniusweb.profile.utilityspace.UtilitySpace import UtilitySpace
+
+from geniusweb.profileconnection import ProfileInterface
 from geniusweb.profileconnection.ProfileConnectionFactory import (
     ProfileConnectionFactory,
 )
 from geniusweb.progress.ProgressRounds import ProgressRounds
+from geniusweb.profile.utilityspace.LinearAdditive import LinearAdditive
+from geniusweb.bidspace.BidsWithUtility import BidsWithUtility
 
 
 class TemplateAgent(DefaultParty):
@@ -33,9 +37,14 @@ class TemplateAgent(DefaultParty):
     def __init__(self):
         super().__init__()
         self.getReporter().log(logging.INFO, "party is initialized")
-        self._profile = None
+        self._profile: ProfileInterface = None
         self._last_offered_bid: Bid = None
         self._last_received_bid: Bid = None
+
+        self._utilspace: LinearAdditive = None
+        self._bidutils: BidsWithUtility = None
+
+        self.opponent_util_space: LinearAdditive = None
 
         # We keep track of the received bids thus far, sorted by our utility
         self._received_bids = []
@@ -127,29 +136,38 @@ class TemplateAgent(DefaultParty):
         if current_round >= self._phase_three_start_round:
             self._current_phase = 3
 
+    # The utilspace attribute is casted from the Profile object to that of a LinearAdditive object
+    # we need to do this casting so that we can use the BidsWithUtility object (in its constructor it takes a
+    # LinearAdditive) object
+    def _updateUtilSpace(self) -> LinearAdditive:
+        newutilspace = self._profile.getProfile()
+        if not newutilspace == self._utilspace:
+            self._utilspace = cast(LinearAdditive, newutilspace)
+            self._bidutils = BidsWithUtility.create(self._utilspace)
+        return self._utilspace
+
     # execute a turn
     def _myTurn(self):
-        profile = self._profile.getProfile()
-
+        #profile = self._profile.getProfile()
+        self._updateUtilSpace()
+        self._updateCurrentPhase()
         # If we are making the first bid, we make the bid with the highest possible utility for ourselves (Agent Smith)
         if self._last_received_bid is None:
-            next_bid = self.random_bid_finder()
+            next_bid = self._bidutils.getExtremeBid(True)
             self._last_offered_bid = next_bid
-
             action = Offer(self._me, next_bid)
             self.getConnection().send(action)
             return
 
         # We received a bid so we check Acceptance Criteria
-        if self._isGood(profile):
+        if self._isGood(self._utilspace):
             action = Accept(self._me, self._last_received_bid)
             self.getConnection().send(action)
             return
+
         # Received bid did not meet acceptance criteria, so we make a counter-offer -> Negotiation Strategy kicks in
         else:
             # Our negotiation strategy depends on which phase we are in (we have split up 200 rounds into three phases)
-            counter_offer_bid = None
-            self._updateCurrentPhase()
             if self._current_phase == 1:
                 counter_offer_bid = self.phase_one_bid()
             elif self._current_phase == 2:
@@ -177,12 +195,13 @@ class TemplateAgent(DefaultParty):
         return self.random_bid_finder()
 
     # method that checks if we would agree with an offer
-    def _isGood(self, profile) -> bool:
+    def _isGood(self, utilspace) -> bool:
         # We immediately accept if the proposed bid has utility > 0.9 for us
-        if profile.getUtility(self._last_received_bid) > 0.9:
+        if utilspace.getUtility(self._last_received_bid) > 0.9:
             return True
         # If the opponent offers utility value exceeds that of our agent’s last offered bid -> we accept
-        elif self._last_offered_bid is not None and profile.getUtility(self._last_received_bid) > profile.getUtility(self._last_offered_bid):
+        elif self._last_offered_bid is not None and utilspace.getUtility(self._last_received_bid) > utilspace.getUtility(
+                self._last_offered_bid):
             return True
         else:
             return False
@@ -204,8 +223,6 @@ class TemplateAgent(DefaultParty):
                 if profile.getUtility(bid) > 0.6:
                     break
         return bid
-
-
 
     # method that checks if we would agree with an offer
     # def _isGood(self, last_bid: Bid, next_bid: Bid) -> bool:
