@@ -81,10 +81,10 @@ class ExtendFrequencyOpponentModel(FrequencyOpponentModel):
             if lastBid != None:
                 previous_value = lastBid.getValue(issue)
                 # Get the ratio of the max frequency and sum of frequencies, capped at 0.25
-                epsilon = min(max(freqs.values())/sum(freqs.values()), 0.2)
+                epsilon = min(max(freqs.values())/sum(freqs.values()), 0.4)
                 # If the value of this issue changed then make it less important
                 if previous_value != value:
-                    newWeight = max(weight - min(1/epsilon, 0.2), 0.01)
+                    newWeight = max(weight - min(1/epsilon, 0.4), 0.01)
                     newWeights[issue] = newWeight
                 # If the value remained the same then make it more important
                 else:
@@ -115,3 +115,17 @@ class ExtendFrequencyOpponentModel(FrequencyOpponentModel):
                 sum = sum + Decimal(self._issueWeights[issue]) * self._getFraction(issue, val(bid.getValue(issue)))
         return round(sum / sumWeights, ExtendFrequencyOpponentModel._DECIMALS)
 
+    def _getFraction(self, issue: str, value: Value) -> Decimal:
+        '''
+        @param issue the issue to check
+        @param value the value to check
+        @return the fraction of the total cases that bids contained given value
+                for the issue.
+        '''
+        if self._totalBids == 0:
+            return Decimal(1)
+        if not (issue in self._bidFrequencies and value in self._bidFrequencies[issue]):
+            return Decimal(0)
+        freq: int = self._bidFrequencies[issue][value]
+        # Add a lower bound of 0.2 for each value weight
+        return round(max(Decimal(freq) / self._totalBids, Decimal(0.2)), FrequencyOpponentModel._DECIMALS)

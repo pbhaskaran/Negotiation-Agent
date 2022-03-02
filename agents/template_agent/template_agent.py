@@ -147,13 +147,13 @@ class TemplateAgent(DefaultParty):
         # Depending on how many rounds have already passed, adjust the constant value we ask for
         # Combination of time-dependent, constant utility and next bid
         if progress < 0.5:
-            return profile.getUtility(last_bid) > 0.75 and profile.getUtility(last_bid) > profile.getUtility(next_bid)
+            return profile.getUtility(last_bid) > 0.8 and profile.getUtility(last_bid) > profile.getUtility(next_bid)
         elif progress < 0.7:
-            return profile.getUtility(last_bid) > 0.65 and profile.getUtility(last_bid) > profile.getUtility(next_bid)
+            return profile.getUtility(last_bid) > 0.7 and profile.getUtility(last_bid) > profile.getUtility(next_bid)
         elif progress < 0.9:
-            return profile.getUtility(last_bid) > 0.55 and profile.getUtility(last_bid) > profile.getUtility(next_bid)
+            return profile.getUtility(last_bid) > 0.6 and profile.getUtility(last_bid) > profile.getUtility(next_bid)
         else:
-            return profile.getUtility(last_bid) > 0.45 and profile.getUtility(last_bid) > profile.getUtility(next_bid)
+            return profile.getUtility(last_bid) > 0.5 and profile.getUtility(last_bid) > profile.getUtility(next_bid)
 
     def _findBid(self) -> Bid:
         # compose a list of all possible bids
@@ -163,7 +163,7 @@ class TemplateAgent(DefaultParty):
         profile = self._profile.getProfile()
 
         # take 50 attempts at finding a random bid that has utility better than 0.6
-        for _ in range(50):
+        for _ in range(1000):
             bid = all_bids.get(randint(0, all_bids.size() - 1))
             # self._opponent_model.getUtility(bid)
             if progress < 0.5:
@@ -172,7 +172,7 @@ class TemplateAgent(DefaultParty):
             else:
                 if profile.getUtility(bid) > 0.6:
                     break
-        self._opponent_model.getUtility(bid)
-        # print(self._opponent_model.getUtility(bid))
+        # self._opponent_model.getUtility(bid)
+        print(self._opponent_model.getUtility(bid))
         # print("Our Bid:", bid)
         return bid
