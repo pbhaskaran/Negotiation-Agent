@@ -2,9 +2,9 @@ import json
 import os
 
 from utils.plot_trace import plot_trace
-from utils.plot_trace import trace_pareto
+from utils.plot_trace import trace_special_points
 from utils.runners import run_session
-from utils.runners import get_pareto
+from utils.runners import get_special_points
 
 # create results directory if it does not exist
 if not os.path.exists("results"):
@@ -38,10 +38,10 @@ for index, action in enumerate(results_trace["actions"], 1):
             accept_point.append(util)
             agents_involved.append(agent)
 
-# Get the pareto optimal points
-pareto_file = "domains/domain{}/specials.json".format(domain)
-pareto_points = get_pareto(pareto_file)
-trace_pareto(pareto_points, accept_point, agents_involved)
+# Get the pareto optimal points + other special points
+special_points_file = "domains/domain{}/specials.json".format(domain)
+special_points = get_special_points(special_points_file)
+trace_special_points(special_points, accept_point, agents_involved)
 
 # plot trace to html file
 plot_trace(results_trace, "results/trace_plot.html")
