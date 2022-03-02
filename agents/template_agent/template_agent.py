@@ -71,7 +71,6 @@ class TemplateAgent(DefaultParty):
         # ActionDone is an action send by an opponent (an offer or an accept)
         elif isinstance(info, ActionDone):
             action: Action = cast(ActionDone, info).getAction()
-
             # if it is an offer, set the last received bid and it isn't from us
             if isinstance(action, Offer) and not str(action.getActor()).__contains__("template"):
                 self._opponent_model = self._opponent_model.WithAction(action, self._last_received_bid, self._progress)

@@ -70,22 +70,23 @@ class ExtendFrequencyOpponentModel(FrequencyOpponentModel):
             return self
 
         bid: Bid = action.getBid()
-        # print("---------------------------")
-        # print("Bid", bid)
-        # print("Last bid", lastBid)
-        # print("---------------------------")
+        # Clone the previous frequencies and weights
         newFreqs: Dict[str, Dict[Value, int]] = self.cloneMap(self._bidFrequencies)
         newWeights: Dict[str, float] = self.cloneMap1(self._issueWeights)
+        # Iterate through all the issues
         for issue in self._domain.getIssues():  # type:ignore
             freqs: Dict[Value, int] = newFreqs[issue]
             weight: float = newWeights[issue]
             value = bid.getValue(issue)
             if lastBid != None:
                 previous_value = lastBid.getValue(issue)
-                epsilon = max(freqs.values())/sum(freqs.values())
+                # Get the ratio of the max frequency and sum of frequencies, capped at 0.25
+                epsilon = min(max(freqs.values())/sum(freqs.values()), 0.25)
+                # If the value of this issue changed then make it less important
                 if previous_value != value:
-                    newWeight = max(weight - 1/epsilon, 0.01)
+                    newWeight = max(weight - min(1/epsilon, 0.25), 0.01)
                     newWeights[issue] = newWeight
+                # If the value remained the same then make it more important
                 else:
                     newWeight = weight + epsilon
                     newWeights[issue] = newWeight
