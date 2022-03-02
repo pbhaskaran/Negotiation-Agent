@@ -21,7 +21,8 @@ settings = {
     "agents": [
         # "agents.boulware_agent.boulware_agent.BoulwareAgent",
         # "agents.random_agent.random_agent.RandomAgent",
-        "agents.hardliner_agent.hardliner_agent.HardlinerAgent",
+        # "agents.hardliner_agent.hardliner_agent.HardlinerAgent",
+        "agents.conceder_agent.conceder_agent.ConcederAgent",
         "agents.template_agent.template_agent.TemplateAgent",
     ],
     "profiles": ["domains/domain{}/profileA.json".format(domain), "domains/domain{}/profileB.json".format(domain)],

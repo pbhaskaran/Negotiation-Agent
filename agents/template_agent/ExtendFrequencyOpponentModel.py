@@ -35,7 +35,6 @@ class ExtendFrequencyOpponentModel(FrequencyOpponentModel):
         self._issueWeights = weights
         self._totalBids = total
         self._resBid = resBid
-        self.epsilon: float = 0.25
 
     @staticmethod
     def create() -> "ExtendFrequencyOpponentModel":
@@ -83,8 +82,12 @@ class ExtendFrequencyOpponentModel(FrequencyOpponentModel):
             value = bid.getValue(issue)
             if lastBid != None:
                 previous_value = lastBid.getValue(issue)
+                epsilon = max(freqs.values())/sum(freqs.values())
                 if previous_value != value:
-                    newWeight = weight - self.epsilon
+                    newWeight = max(weight - 1/epsilon, 0.01)
+                    newWeights[issue] = newWeight
+                else:
+                    newWeight = weight + epsilon
                     newWeights[issue] = newWeight
             if value != None:
                 oldfreq = 0
