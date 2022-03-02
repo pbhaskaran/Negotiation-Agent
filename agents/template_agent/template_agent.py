@@ -133,7 +133,7 @@ class TemplateAgent(DefaultParty):
 
         # If we are making the first bid, we make the bid with the highest possible utility for ourselves (Agent Smith)
         if self._last_received_bid is None:
-            next_bid = self._findBid()
+            next_bid = self.random_bid_finder()
             self._last_offered_bid = next_bid
 
             action = Offer(self._me, next_bid)
@@ -145,13 +145,36 @@ class TemplateAgent(DefaultParty):
             action = Accept(self._me, self._last_received_bid)
             self.getConnection().send(action)
             return
-        # Received bid did not meet acceptance criteria, so we make a counter-offer
+        # Received bid did not meet acceptance criteria, so we make a counter-offer -> Negotiation Strategy kicks in
         else:
-            next_bid = self._findBid()
-            self._last_offered_bid = next_bid
+            # Our negotiation strategy depends on which phase we are in (we have split up 200 rounds into three phases)
+            counter_offer_bid = None
+            self._updateCurrentPhase()
+            if self._current_phase == 1:
+                counter_offer_bid = self.phase_one_bid()
+            elif self._current_phase == 2:
+                counter_offer_bid = self.phase_two_bid()
+            else:
+                counter_offer_bid = self.phase_three_bid()
 
-            action = Offer(self._me, next_bid)
+            self._last_offered_bid = counter_offer_bid
+            action = Offer(self._me, counter_offer_bid)
             self.getConnection().send(action)
+
+    # A bid we offer in phase one is quite selfish with high utility for ourselves (i.e Optimal Bids strategy),
+    # this way the opponent can learn our profile. We also attempt to learn our opponent model during this phase
+    def phase_one_bid(self) -> Bid:
+        return self.random_bid_finder()
+
+    # A bid we offer in phase two is time concession based: with a mix between the Optimal Bid strategy (ignoring
+    # opponent model) and the opponents desires (i.e including the Opponent Frequency Model)
+    def phase_two_bid(self) -> Bid:
+        return self.random_bid_finder()
+
+    # A bid we offer in phase three has higher concession rates, and we offer bids that the opponent previously offered
+    # to us, in hopes of settling the deal
+    def phase_three_bid(self) -> Bid:
+        return self.random_bid_finder()
 
     # method that checks if we would agree with an offer
     def _isGood(self, profile) -> bool:
@@ -164,7 +187,7 @@ class TemplateAgent(DefaultParty):
         else:
             return False
 
-    def _findBid(self) -> Bid:
+    def random_bid_finder(self) -> Bid:
         # compose a list of all possible bids
         domain = self._profile.getProfile().getDomain()
         all_bids = AllBidsList(domain)
@@ -182,7 +205,9 @@ class TemplateAgent(DefaultParty):
                     break
         return bid
 
-    #   method that checks if we would agree with an offer
+
+
+    # method that checks if we would agree with an offer
     # def _isGood(self, last_bid: Bid, next_bid: Bid) -> bool:
     #     if last_bid is None:
     #         return False
