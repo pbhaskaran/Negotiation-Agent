@@ -74,7 +74,7 @@ class TemplateAgent(DefaultParty):
 
             # if it is an offer, set the last received bid
             if isinstance(action, Offer):
-                self._opponent_model = self._opponent_model.WithAction(action, self._progress)
+                self._opponent_model = self._opponent_model.WithAction(action, self._last_received_bid, self._progress)
                 self._last_received_bid = cast(Offer, action).getBid()
         # YourTurn notifies you that it is your turn to act
         elif isinstance(info, YourTurn):
@@ -166,6 +166,7 @@ class TemplateAgent(DefaultParty):
         # take 50 attempts at finding a random bid that has utility better than 0.6
         for _ in range(50):
             bid = all_bids.get(randint(0, all_bids.size() - 1))
+            # self._opponent_model.getUtility(bid)
             print(self._opponent_model.getUtility(bid))
             if progress < 0.5:
                 if profile.getUtility(bid) > 0.65:
