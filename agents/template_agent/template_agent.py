@@ -217,7 +217,7 @@ class TemplateAgent(DefaultParty):
             # I dont know what to do if we don't find bids, maybe just return maximum bid?
             return self._bidutils.getExtremeBid(True)
         else:
-            return self.random_bid_finder()
+            return potential_bids.get(randint(0, potential_bids.size() - 1))
 
     # A bid we offer in phase two is time concession based: with a mix between the Optimal Bid strategy (ignoring
     # opponent model) and the opponents desires (i.e including the Opponent Frequency Model)
