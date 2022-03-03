@@ -85,6 +85,7 @@ class TemplateAgent(DefaultParty):
                 info.getProfile().getURI(), self.getReporter()
             )
             self.set_optimal_expected_utility()
+
             self._opponent_model = self._opponent_model.With(newDomain=self._profile.getProfile().getDomain(),
                                                              newResBid=0)
             #
@@ -95,10 +96,12 @@ class TemplateAgent(DefaultParty):
         elif isinstance(info, ActionDone):
             action: Action = cast(ActionDone, info).getAction()
             # if it is an offer, set the last received bid and append it to the list of received bids
-            if isinstance(action, Offer):
+            if isinstance(action, Offer) and not str(action.getActor()).__contains__("template"):
+                if self._progress.getCurrentRound() <= 25:
+                    self._opponent_model = self._opponent_model.WithAction(action, self._last_received_bid, self._progress)
                 self._last_received_bid = cast(Offer, action).getBid()
                 #print(action.getActor(), " ", self._last_received_bid, " ", "value:", self._profile.getProfile().getUtility(self._last_received_bid))
-
+                self._opponent_model
         # YourTurn notifies you that it is your turn to act
         elif isinstance(info, YourTurn):
             # execute a turn
@@ -231,12 +234,14 @@ class TemplateAgent(DefaultParty):
     # A bid we offer in phase two is time concession based: with a mix between the Optimal Bid strategy (ignoring
     # opponent model) and the opponents desires (i.e including the Opponent Frequency Model)
     def phase_two_bid(self) -> Bid:
+        print
         #basic idea: find optimal bids within the range of alpha and then
         #sort on utility of opponent
         # top 100 bids are selected at random so we dont keep offering the same bid inside of the range
         lower_bound = self._alpha - 0.05
         upper_bound = self._alpha + 0.1
         potential_bids = self._bidutils.getBids(Interval(Decimal(lower_bound), Decimal(upper_bound)))
+        #what should the appropriate step size?
         self._alpha -= 0.001
         result = sorted(potential_bids, key=lambda bid: self._opponent_model.getUtility(bid),
                                      reverse=True)
