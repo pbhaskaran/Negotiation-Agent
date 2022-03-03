@@ -1,3 +1,4 @@
+import decimal
 import logging
 from random import randint
 from typing import cast
@@ -19,11 +20,17 @@ from geniusweb.issuevalue.ValueSet import ValueSet
 from geniusweb.party.Capabilities import Capabilities
 from geniusweb.party.DefaultParty import DefaultParty
 from geniusweb.profile.utilityspace.UtilitySpace import UtilitySpace
-from geniusweb.opponentmodel.FrequencyOpponentModel import FrequencyOpponentModel
+
+from geniusweb.profileconnection import ProfileInterface
 from geniusweb.profileconnection.ProfileConnectionFactory import (
     ProfileConnectionFactory,
 )
 from geniusweb.progress.ProgressRounds import ProgressRounds
+from geniusweb.profile.utilityspace.LinearAdditive import LinearAdditive
+from geniusweb.bidspace.BidsWithUtility import BidsWithUtility
+from geniusweb.bidspace.Interval import Interval
+from decimal import Decimal
+
 from agents.template_agent.ExtendFrequencyOpponentModel import ExtendFrequencyOpponentModel
 
 
@@ -35,9 +42,15 @@ class TemplateAgent(DefaultParty):
     def __init__(self):
         super().__init__()
         self.getReporter().log(logging.INFO, "party is initialized")
-        self._profile = None
+        self._profile: ProfileInterface = None
         self._last_offered_bid: Bid = None
         self._last_received_bid: Bid = None
+
+        self._utilspace: LinearAdditive = None
+        self._bidutils: BidsWithUtility = None
+        self._expected_utilities = []
+
+        self.opponent_util_space: LinearAdditive = None
 
         # We keep track of the received bids thus far, sorted by our utility
         self._received_bids = []
@@ -47,10 +60,10 @@ class TemplateAgent(DefaultParty):
         self._current_phase = 1
         # At which round of the negotiation should phase 2 and phase 3 begin:
         self._phase_two_start_round = 30
-        self._phase_three_start_round = 175
-        self._alpha = 0.7
+        self._phase_three_start_round = 185
+        self._alpha = 0.9
         self._opponent_model: ExtendFrequencyOpponentModel = ExtendFrequencyOpponentModel.create()
-        self._our_utilities = {}
+
 
     def notifyChange(self, info: Inform):
         """This is the entry point of all interaction with your agent after is has been initialised.
@@ -71,22 +84,21 @@ class TemplateAgent(DefaultParty):
             self._profile = ProfileConnectionFactory.create(
                 info.getProfile().getURI(), self.getReporter()
             )
-
+            self.set_optimal_expected_utility()
             self._opponent_model = self._opponent_model.With(newDomain=self._profile.getProfile().getDomain(),
                                                              newResBid=0)
-
-            for key, value in self._profile.getProfile().getUtilities().items():
-                self._our_utilities[key] = value.getUtilities()
-            print(self._our_utilities)
-
+            #
+            # for key, value in self._profile.getProfile().getUtilities().items():
+            #     self._our_utilities[key] = value.getUtilities()
 
         # ActionDone is an action send by an opponent (an offer or an accept)
         elif isinstance(info, ActionDone):
             action: Action = cast(ActionDone, info).getAction()
-            # if it is an offer, set the last received bid and it isn't from us
-            if isinstance(action, Offer) and not str(action.getActor()).__contains__("template"):
-                self._opponent_model = self._opponent_model.WithAction(action, self._last_received_bid, self._progress)
+            # if it is an offer, set the last received bid and append it to the list of received bids
+            if isinstance(action, Offer):
                 self._last_received_bid = cast(Offer, action).getBid()
+                #print(action.getActor(), " ", self._last_received_bid, " ", "value:", self._profile.getProfile().getUtility(self._last_received_bid))
+
         # YourTurn notifies you that it is your turn to act
         elif isinstance(info, YourTurn):
             # execute a turn
@@ -104,18 +116,16 @@ class TemplateAgent(DefaultParty):
                 logging.WARNING, "Ignoring unknown info " + str(info)
             )
 
-        # lets the geniusweb system know what settings this agent can handle
-        # leave it as it is for this course
-
+    # lets the geniusweb system know what settings this agent can handle
+    # leave it as it is for this course
     def getCapabilities(self) -> Capabilities:
         return Capabilities(
             set(["SAOP"]),
             set(["geniusweb.profile.utilityspace.LinearAdditive"]),
         )
 
-        # terminates the agent and its connections
-        # leave it as it is for this course
-
+    # terminates the agent and its connections
+    # leave it as it is for this course
     def terminate(self):
         self.getReporter().log(logging.INFO, "party is terminating:")
         super().terminate()
@@ -139,29 +149,56 @@ class TemplateAgent(DefaultParty):
         if current_round >= self._phase_three_start_round:
             self._current_phase = 3
 
+    # The utilspace attribute is casted from the Profile object to that of a LinearAdditive object
+    # we need to do this casting so that we can use the BidsWithUtility object (in its constructor it takes a
+    # LinearAdditive) object
+    def _updateUtilSpace(self) -> LinearAdditive:
+        newutilspace = self._profile.getProfile()
+        if not newutilspace == self._utilspace:
+            self._utilspace = cast(LinearAdditive, newutilspace)
+            self._bidutils = BidsWithUtility.create(self._utilspace)
+        return self._utilspace
+
+    def set_optimal_expected_utility(self):
+        expected_utilities = []
+        rv_bid = self._profile.getProfile().getReservationBid()
+        if rv_bid != None:
+            rv = self._profile.getProfile().getUtility(rv_bid)
+            expected_utilities.append(rv)
+        else:
+            expected_utilities.append(0)
+
+        for i in range(1, 201):
+            prev = expected_utilities[i - 1]
+            util = 0.25 * (prev + 1.0) ** 2
+            expected_utilities.append(util)
+        self._expected_utilities = expected_utilities
+
     # execute a turn
     def _myTurn(self):
-        profile = self._profile.getProfile()
-
+        # profile = self._profile.getProfile()
+        self._received_bids.append(self._last_received_bid)
+        self._updateUtilSpace()
+        self._updateCurrentPhase()
         # If we are making the first bid, we make the bid with the highest possible utility for ourselves (Agent Smith)
         if self._last_received_bid is None:
-            next_bid = self.random_bid_finder()
+            next_bid = self._bidutils.getExtremeBid(True)
             self._last_offered_bid = next_bid
-
             action = Offer(self._me, next_bid)
             self.getConnection().send(action)
             return
 
         # We received a bid so we check Acceptance Criteria
-        if self._isGood(profile):
+        if self._isGood(self._utilspace):
             action = Accept(self._me, self._last_received_bid)
             self.getConnection().send(action)
+            #print("ACCEPTED BID WOOOHOO")
             return
+
         # Received bid did not meet acceptance criteria, so we make a counter-offer -> Negotiation Strategy kicks in
         else:
+            #print(self._progress.getCurrentRound())
             # Our negotiation strategy depends on which phase we are in (we have split up 200 rounds into three phases)
-            counter_offer_bid = None
-            self._updateCurrentPhase()
             if self._current_phase == 1:
                 counter_offer_bid = self.phase_one_bid()
             elif self._current_phase == 2:
@@ -176,42 +213,56 @@ class TemplateAgent(DefaultParty):
     # A bid we offer in phase one is quite selfish with high utility for ourselves (i.e Optimal Bids strategy),
     # this way the opponent can learn our profile. We also attempt to learn our opponent model during this phase
     def phase_one_bid(self) -> Bid:
-        # print(self._current_phase)
-        # print(self._progress.getCurrentRound())
-        return self.random_bid_finder()
+        num_remaining_rounds = 200 - self._progress.getCurrentRound()
+        cur_exp_optimal_utility = Decimal(self._expected_utilities[num_remaining_rounds])
+
+        # Should we make lower bound change with time as in the time based agent?
+        lower_bound = cur_exp_optimal_utility - Decimal(0.05)
+        potential_bids = self._bidutils.getBids(Interval(lower_bound, cur_exp_optimal_utility))
+        # TODO: Add code for learning the opponent model here:
+
+        # Return a random bid from the potential bids
+        if potential_bids.size() == 0:
+            # I dont know what to do if we don't find bids, maybe just return maximum bid?
+            return self._bidutils.getExtremeBid(True)
+        else:
+            return potential_bids.get(randint(0, potential_bids.size() - 1))
 
     # A bid we offer in phase two is time concession based: with a mix between the Optimal Bid strategy (ignoring
     # opponent model) and the opponents desires (i.e including the Opponent Frequency Model)
     def phase_two_bid(self) -> Bid:
-        #basic idea:select a subset of bids having the same utility as the round before (0.7).
-        #send back the bid that has the highest utility for the opponent. If opponent rejects
-        # start conceding by small amounts from there
-        domain = self._profile.getProfile().getDomain()
-        all_bids = AllBidsList(domain)
-        profile = self._profile.getProfile()
-        bidList = []
-        for i in range(0, 500):
-            currentBid = all_bids.get(randint(0, all_bids.size() - 1))
-            if profile.getUtility(currentBid) > self._alpha and profile.getUtility(currentBid) < self._alpha + 0.2:
-                bidList.append(currentBid)
-        self._alpha -= 0.005
-        print(self._alpha)
-        result = self.sort(bidList)
-        return result[0]
+        #basic idea: find optimal bids within the range of alpha and then
+        #sort on utility of opponent
+        # top 100 bids are selected at random so we dont keep offering the same bid inside of the range
+        lower_bound = self._alpha - 0.05
+        upper_bound = self._alpha + 0.1
+        potential_bids = self._bidutils.getBids(Interval(Decimal(lower_bound), Decimal(upper_bound)))
+        self._alpha -= 0.001
+        result = sorted(potential_bids, key=lambda bid: self._opponent_model.getUtility(bid),
+                                     reverse=True)
+        if result == 0:
+            return self.random_bid_finder()
+        else:
+            maximum = min(100, len(result))
+            return result[(randint(0, maximum - 1))]
 
     # A bid we offer in phase three has higher concession rates, and we offer bids that the opponent previously offered
     # to us, in hopes of settling the deal
     def phase_three_bid(self) -> Bid:
-        print("hello")
-        return self.random_bid_finder()
+        print("hi")
+        self._received_bids = sorted(self._received_bids, key=lambda bid: self._profile.getProfile().getUtility(bid),
+                                     reverse=True)
+        return self._received_bids[0]
 
     # method that checks if we would agree with an offer
-    def _isGood(self, profile) -> bool:
+    def _isGood(self, utilspace) -> bool:
         # We immediately accept if the proposed bid has utility > 0.9 for us
-        if profile.getUtility(self._last_received_bid) > 0.9:
+        if utilspace.getUtility(self._last_received_bid) > 0.9:
             return True
         # If the opponent offers utility value exceeds that of our agent’s last offered bid -> we accept
-        elif self._last_offered_bid is not None and profile.getUtility(self._last_received_bid) > profile.getUtility(self._last_offered_bid):
+        elif self._last_offered_bid is not None and utilspace.getUtility(
+                self._last_received_bid) > utilspace.getUtility(
+                self._last_offered_bid):
             return True
         else:
             return False
@@ -222,32 +273,17 @@ class TemplateAgent(DefaultParty):
         all_bids = AllBidsList(domain)
         progress = self._progress.get(0)
         profile = self._profile.getProfile()
+
         # take 50 attempts at finding a random bid that has utility better than 0.6
         for _ in range(50):
             bid = all_bids.get(randint(0, all_bids.size() - 1))
             if progress < 0.5:
-                if profile.getUtility(bid) > 0.6:
+                if profile.getUtility(bid) > 0.65:
                     break
             else:
                 if profile.getUtility(bid) > 0.6:
                     break
-        #bid = all_bids.get(0)
         return bid
-
-    # def optimalBids(self, bidList):
-
-    def sort(self, bidList):
-        for i in range(0, len(bidList)):
-            key = i
-            for j in range(i, len(bidList)):
-               if self._opponent_model.getUtility(bidList[j]) > self._opponent_model.getUtility(bidList[key]):
-                    key = j
-            temp = bidList[i]
-            bidList[i] = bidList[key]
-            bidList[key] = temp
-        return bidList
-
-
 
     # method that checks if we would agree with an offer
     # def _isGood(self, last_bid: Bid, next_bid: Bid) -> bool:
