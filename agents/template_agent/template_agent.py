@@ -52,8 +52,6 @@ class TemplateAgent(DefaultParty):
 
         self.opponent_util_space: LinearAdditive = None
 
-        self._opponent_model: ExtendFrequencyOpponentModel = ExtendFrequencyOpponentModel.create()
-
         # We keep track of the received bids thus far, sorted by our utility
         self._received_bids = []
         self._progress: ProgressRounds = None
@@ -63,6 +61,15 @@ class TemplateAgent(DefaultParty):
         # At which round of the negotiation should phase 2 and phase 3 begin:
         self._phase_two_start_round = 30
         self._phase_three_start_round = 185
+        self._alpha = 0.9
+        self._opponent_model: ExtendFrequencyOpponentModel = ExtendFrequencyOpponentModel.create()
+
+        # Counters for analysis purposes:
+        self._fortunate_bid_count = 0
+        self._nice_bid_count = 0
+        self._concession_bid_count = 0
+        self._silent_bid_count = 0
+        self._selfish_and_unfortunate_move_count = 0
 
     def notifyChange(self, info: Inform):
         """This is the entry point of all interaction with your agent after is has been initialised.
@@ -231,7 +238,67 @@ class TemplateAgent(DefaultParty):
     # A bid we offer in phase two is time concession based: with a mix between the Optimal Bid strategy (ignoring
     # opponent model) and the opponents desires (i.e including the Opponent Frequency Model)
     def phase_two_bid(self) -> Bid:
-        return self.random_bid_finder()
+        # In the first half, we attempt to first make fortunate moves, then nice moves, and if we cannot find
+        # any bid in these categories, we concede. In other words, we completely ignore selfish or unfortunate moves.
+        # We begin our concession halfway through phase 2
+        if self._progress.getCurrentRound() < round((self._phase_three_start_round - self._phase_two_start_round) / 2):
+            # First we randomly find some bids in our BidSpace. The upper bound is found applying Optimal Bid Strategy
+            # lower bid is decreased with alpha over time.
+            # Todo: Should we use the upper bound thats equal to the Optimal Bid for ourselves or based on time like Prajit wrote later down
+            lower_bound = self._alpha - 0.05
+            num_remaining_rounds = 200 - self._progress.getCurrentRound()
+            cur_exp_optimal_utility = Decimal(self._expected_utilities[num_remaining_rounds])
+            potential_bids = self._bidutils.getBids(Interval(Decimal(lower_bound), cur_exp_optimal_utility))
+            self._alpha -= 0.001
+
+            # Now we split our potential bids into four sets of fortunate, nice, concession bids, and silent bids
+            fortunate_bids = []
+            nice_bids = []
+            concession_bids = []
+            silent_bids = []
+            for bid in potential_bids:
+                delta_me = self._utilspace.getUtility(bid) - self._utilspace.getUtility(self._last_offered_bid)
+                delta_op = self._opponent_model.getUtility(bid) - self._opponent_model.getUtility(self._last_offered_bid)
+                if delta_me > 0 and delta_op > 0:
+                    fortunate_bids.append(bid)
+                elif -0.007 <= delta_me <= 0.007 and delta_op > 0:
+                    nice_bids.append(bid)
+                elif delta_me < 0 and delta_op >= 0:
+                    concession_bids.append(bid)
+                elif -0.005 <= delta_me <= 0.005 and -0.005 <= delta_me <= 0.005:
+                    silent_bids.append(bid)
+                else:
+                    continue
+            # Order of selecting a bid: Fortunate, Nice, Concession, Silent, Selfish or Unfortunate
+            if len(fortunate_bids) != 0:
+                self._fortunate_bid_count += 1
+                return fortunate_bids[randint(0, len(fortunate_bids) - 1)]
+            elif len(nice_bids) != 0:
+                self._nice_bid_count += 1
+                return nice_bids[randint(0, len(nice_bids) - 1)]
+            elif len(concession_bids) != 0:
+                self._concession_bid_count += 1
+                return concession_bids[randint(0, len(concession_bids) - 1)]
+            elif len(silent_bids) != 0:
+                self._silent_bid_count += 1
+                return silent_bids[randint(0, len(silent_bids) - 1)]
+            else:
+                self._selfish_and_unfortunate_move_count += 1
+                # Extreme worse case scenario we resort to unfortunate or selfish moves
+                potential_bids.get(randint(0, potential_bids.size() - 1))
+        else:
+            lower_bound = self._alpha - 0.05
+            upper_bound = self._alpha + 0.1
+            potential_bids = self._bidutils.getBids(Interval(Decimal(lower_bound), Decimal(upper_bound)))
+            # what should the appropriate step size?
+            self._alpha -= 0.001
+            result = sorted(potential_bids, key=lambda bid: self._opponent_model.getUtility(bid),
+                            reverse=True)
+            if result == 0:
+                return self.random_bid_finder()
+            else:
+                maximum = min(100, len(result))
+                return result[(randint(0, maximum - 1))]
 
     # A bid we offer in phase three has higher concession rates, and we offer bids that the opponent previously offered
     # to us, in hopes of settling the deal
@@ -249,6 +316,9 @@ class TemplateAgent(DefaultParty):
         elif self._last_offered_bid is not None and utilspace.getUtility(
                 self._last_received_bid) > utilspace.getUtility(
                 self._last_offered_bid):
+            print("Fortunate Bids: ", self._fortunate_bid_count, "Nice bids: ", self._nice_bid_count,
+                  "Concession Bids: ", self._concession_bid_count, "Silent Bids: ", self._silent_bid_count,
+                  "Unfortunate. and Selfish Bids: ", self._selfish_and_unfortunate_move_count)
             return True
         else:
             return False

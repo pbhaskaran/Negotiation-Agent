@@ -16,3 +16,14 @@ LinearAgent.log
 .idea/modules.xml
 .idea/Negotiation-Agent.iml
 .idea/vcs.xml
+.idea/inspectionProfiles/profiles_settings.xml
+.idea/misc.xml
+.idea/misc.xml
+.idea/modules.xml
+.idea/workspace.xml
+BoulwareAgent.log
+results/pareto_plot.html
+results/results_summary.json
+results/results_trace.json
+results/trace_plot.html
+TemplateAgent.log
