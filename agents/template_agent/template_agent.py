@@ -31,6 +31,8 @@ from geniusweb.bidspace.BidsWithUtility import BidsWithUtility
 from geniusweb.bidspace.Interval import Interval
 from decimal import Decimal
 
+from agents.template_agent.ExtendFrequencyOpponentModel import ExtendFrequencyOpponentModel
+
 
 class TemplateAgent(DefaultParty):
     """
@@ -49,6 +51,8 @@ class TemplateAgent(DefaultParty):
         self._expected_utilities = []
 
         self.opponent_util_space: LinearAdditive = None
+
+        self._opponent_model: ExtendFrequencyOpponentModel = ExtendFrequencyOpponentModel.create()
 
         # We keep track of the received bids thus far, sorted by our utility
         self._received_bids = []
@@ -82,11 +86,17 @@ class TemplateAgent(DefaultParty):
             )
             self.set_optimal_expected_utility()
 
+            self._opponent_model = self._opponent_model.With(newDomain=self._profile.getProfile().getDomain(),
+                                                             newResBid=0)
+
         # ActionDone is an action send by an opponent (an offer or an accept)
         elif isinstance(info, ActionDone):
             action: Action = cast(ActionDone, info).getAction()
             # if it is an offer, set the last received bid and append it to the list of received bids
             if isinstance(action, Offer):
+                if self._current_phase == 1:
+                    self._opponent_model = self._opponent_model.WithAction(action, self._last_received_bid,
+                                                                           self._progress)
                 self._last_received_bid = cast(Offer, action).getBid()
                 #print(action.getActor(), " ", self._last_received_bid, " ", "value:", self._profile.getProfile().getUtility(self._last_received_bid))
 
@@ -210,7 +220,6 @@ class TemplateAgent(DefaultParty):
         # Should we make lower bound change with time as in the time based agent?
         lower_bound = cur_exp_optimal_utility - Decimal(0.05)
         potential_bids = self._bidutils.getBids(Interval(lower_bound, cur_exp_optimal_utility))
-        # TODO: Add code for learning the opponent model here:
 
         # Return a random bid from the potential bids
         if potential_bids.size() == 0:
