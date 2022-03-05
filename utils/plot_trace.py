@@ -48,7 +48,7 @@ def trace_special_points(special_points: list, accept_point: list, agents_involv
         go.Scatter(
             mode="markers",
             x=[special_points[2][0]],
-            y=[special_points[2][0]],
+            y=[special_points[2][1]],
             marker={"color": "black", "size": 13},
             name="Kalai Point" + ": [" + str(kalai_text[0]) + "]",
             hovertext=kalai_text,
