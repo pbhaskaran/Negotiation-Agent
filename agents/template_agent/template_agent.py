@@ -63,6 +63,7 @@ class TemplateAgent(DefaultParty):
         self._phase_three_start_round = 185
         self._alpha = 0.9
         self._opponent_model: ExtendFrequencyOpponentModel = ExtendFrequencyOpponentModel.create()
+        self._decrease_alpha = False
 
     def notifyChange(self, info: Inform):
         """This is the entry point of all interaction with your agent after is has been initialised.
@@ -192,13 +193,14 @@ class TemplateAgent(DefaultParty):
             self.getConnection().send(action)
             return
 
-        # We received a bid so we check Acceptance Criteria
-        if self._isGood(self._utilspace):
+        # We received a bid so we make initial check of Acceptance Criteria
+        # We immediately accept if the proposed bid has utility > 0.9 for us
+        if self._utilspace.getUtility(self._last_received_bid) > 0.9:
             action = Accept(self._me, self._last_received_bid)
             self.getConnection().send(action)
             return
-
-        # Received bid did not meet acceptance criteria, so we make a counter-offer -> Negotiation Strategy kicks in
+        # Received bid did not meet initial acceptance criteria, so we make a counter-offer -> Negotiation Strategy
+        # kicks in
         else:
             # Our negotiation strategy depends on which phase we are in (we have split up 200 rounds into three phases)
             if self._current_phase == 1:
@@ -207,10 +209,17 @@ class TemplateAgent(DefaultParty):
                 counter_offer_bid = self.phase_two_bid()
             else:
                 counter_offer_bid = self.phase_three_bid()
-
-            self._last_offered_bid = counter_offer_bid
-            action = Offer(self._me, counter_offer_bid)
-            self.getConnection().send(action)
+            # With our counter_offer bid, we check our Acceptance criteria. If we don't decide to accept, we proceed
+            # to offer
+            if self._isGood(self._last_received_bid, counter_offer_bid):
+                action = Accept(self._me, self._last_received_bid)
+                self.getConnection().send(action)
+                return
+            else:
+                self._last_offered_bid = counter_offer_bid
+                action = Offer(self._me, counter_offer_bid)
+                self.getConnection().send(action)
+                return
 
     # A bid we offer in phase one is quite selfish with high utility for ourselves (i.e Optimal Bids strategy),
     # this way the opponent can learn our profile. We also attempt to learn our opponent model during this phase
@@ -235,15 +244,16 @@ class TemplateAgent(DefaultParty):
         # In the first half, we attempt to first make fortunate moves, then nice moves, and if we cannot find
         # any bid in these categories, we concede. In other words, we completely ignore selfish or unfortunate moves.
         # We begin our concession halfway through phase 2
-        if self._progress.getCurrentRound() < round((self._phase_three_start_round - self._phase_two_start_round) / 2):
+        if self._progress.getCurrentRound() < round((self._phase_three_start_round + self._phase_two_start_round) / 2):
             # First we randomly find some bids in our BidSpace. The upper bound is found applying Optimal Bid Strategy
             # lower bid is decreased with alpha over time.
-            # Todo: Should we use the upper bound thats equal to the Optimal Bid for ourselves or based on time like Prajit wrote later down
-            lower_bound = self._alpha - 0.1
-            num_remaining_rounds = 200 - self._progress.getCurrentRound()
-            cur_exp_optimal_utility = Decimal(self._expected_utilities[num_remaining_rounds])
-            potential_bids = self._bidutils.getBids(Interval(Decimal(lower_bound), cur_exp_optimal_utility))
-            self._alpha -= 0.002
+            lower_bound = self._alpha - 0.05
+            upper_bound = self._alpha + 0.05
+                #num_remaining_rounds = 200 - self._progress.getCurrentRound()
+                #cur_exp_optimal_utility = Decimal(self._expected_utilities[num_remaining_rounds])
+            potential_bids = self._bidutils.getBids(Interval(Decimal(lower_bound), Decimal(upper_bound)))
+            if self._decrease_alpha:
+                self._alpha -= 0.002
 
             # Now we split our potential bids into four sets of fortunate, nice, concession bids, and silent bids
             fortunate_bids = []
@@ -266,24 +276,32 @@ class TemplateAgent(DefaultParty):
                     continue
             # Order of selecting a bid: Fortunate, Nice, Concession, Silent, Selfish or Unfortunate
             if len(fortunate_bids) != 0:
+                self._decrease_alpha = False
                 return fortunate_bids[randint(0, len(fortunate_bids) - 1)]
             elif len(nice_bids) != 0:
+                self._decrease_alpha = False
                 return nice_bids[randint(0, len(nice_bids) - 1)]
             elif len(concession_bids) != 0:
+                self._decrease_alpha = True
                 return concession_bids[randint(0, len(concession_bids) - 1)]
             elif len(silent_bids) != 0:
+                self._decrease_alpha = True
                 return silent_bids[randint(0, len(silent_bids) - 1)]
             else:
+                self._decrease_alpha = True
                 # Extreme worse case scenario we resort to unfortunate or selfish moves
                 potential_bids.get(randint(0, potential_bids.size() - 1))
         else:
             # next half of the rounds we slowly start conceding to the opponent
-            lower_bound = self._alpha - 0.05
-            num_remaining_rounds = 200 - self._progress.getCurrentRound()
-            upper_bound = Decimal(self._expected_utilities[num_remaining_rounds])
+            #     lower_bound = self._alpha - 0.05
+            #     num_remaining_rounds = 200 - self._progress.getCurrentRound()
+            #     upper_bound = Decimal(self._expected_utilities[num_remaining_rounds])
             # find bids within the range
+            lower_bound = self._alpha - 0.05
+            upper_bound = (self._alpha + 0.05 + self._expected_utilities[200 - self._progress.getCurrentRound()]) / 2
+            print(upper_bound)
             potential_bids = self._bidutils.getBids(Interval(Decimal(lower_bound), Decimal(upper_bound)))
-            self._alpha -= 0.001
+            self._alpha -= 0.002
             result = sorted(potential_bids, key=lambda bid: self._opponent_model.getUtility(bid),
                             reverse=True)
             if result == 0:
@@ -300,17 +318,21 @@ class TemplateAgent(DefaultParty):
         return self._received_bids[0]
 
     # method that checks if we would agree with an offer
-    def _isGood(self, utilspace) -> bool:
-        # We immediately accept if the proposed bid has utility > 0.9 for us
-        if utilspace.getUtility(self._last_received_bid) > 0.9:
-            return True
-        # If the opponent offers utility value exceeds that of our agent’s last offered bid -> we accept
-        elif self._last_offered_bid is not None and utilspace.getUtility(
-                self._last_received_bid) > utilspace.getUtility(
-            self._last_offered_bid):
-            return True
-        else:
+    def _isGood(self, last_bid, next_bid) -> bool:
+        if last_bid is None:
             return False
+        profile = self._utilspace
+        progress = self._progress.get(0)
+        # Depending on how many rounds have already passed, adjust the constant value we ask for
+        # Combination of time-dependent, constant utility and next bid
+        if progress < 0.5:
+            return profile.getUtility(last_bid) > 0.85 and profile.getUtility(last_bid) > profile.getUtility(next_bid)
+        elif progress < 0.7:
+            return profile.getUtility(last_bid) > 0.75 and profile.getUtility(last_bid) > profile.getUtility(next_bid)
+        elif progress < 0.9:
+            return profile.getUtility(last_bid) > 0.65 and profile.getUtility(last_bid) > profile.getUtility(next_bid)
+        else:
+            return profile.getUtility(last_bid) > 0.60 and profile.getUtility(last_bid) > profile.getUtility(next_bid)
 
     def random_bid_finder(self) -> Bid:
         # compose a list of all possible bids
