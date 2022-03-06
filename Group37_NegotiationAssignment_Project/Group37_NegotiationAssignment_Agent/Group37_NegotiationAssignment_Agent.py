@@ -284,8 +284,8 @@ class Group37_NegotiationAssignment_Agent(DefaultParty):
         # any bid in these categories, we concede. In other words, we completely ignore selfish or unfortunate moves.
         # We begin our concession halfway through phase 2
         if self._progress.getCurrentRound() < round((self._phase_three_start_round + self._phase_two_start_round) / 2):
-            # First we randomly find some bids in our BidSpace. The upper bound is found applying Optimal Bid Strategy
-            # lower bid is decreased with alpha over time.
+            # First we randomly find some bids in our BidSpace. The upper bound is found by an average of the
+            # Optimal Bid Strategy and the conceding upper bound. 
             lower_bound = self._alpha - 0.04
             upper_bound = (self._alpha + 0.05 + self._expected_utilities[200 - self._progress.getCurrentRound()]) / 2
             potential_bids = self._bidutils.getBids(Interval(Decimal(lower_bound), Decimal(upper_bound)))
@@ -329,11 +329,6 @@ class Group37_NegotiationAssignment_Agent(DefaultParty):
                 # Extreme worse case scenario we resort to unfortunate or selfish moves
                 return potential_bids.get(randint(0, potential_bids.size() - 1))
         else:
-            # next half of the rounds we slowly start conceding to the opponent
-            #     lower_bound = self._alpha - 0.05
-            #     num_remaining_rounds = 200 - self._progress.getCurrentRound()
-            #     upper_bound = Decimal(self._expected_utilities[num_remaining_rounds])
-            # find bids within the range
             lower_bound = self._alpha - 0.04
             upper_bound = (self._alpha + 0.05 + self._expected_utilities[200 - self._progress.getCurrentRound()]) / 2
             potential_bids = self._bidutils.getBids(Interval(Decimal(lower_bound), Decimal(upper_bound)))
