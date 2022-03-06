@@ -34,7 +34,7 @@ from decimal import Decimal
 from agents.template_agent.ExtendFrequencyOpponentModel import ExtendFrequencyOpponentModel
 
 
-class TemplateAgent(DefaultParty):
+class Group37_NegotiationAssignment_Agent(DefaultParty):
     """
     Template agent that offers random bids until a bid with sufficient utility is offered.
     """
