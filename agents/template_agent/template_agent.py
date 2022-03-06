@@ -60,7 +60,7 @@ class TemplateAgent(DefaultParty):
         self._current_phase = 1
         # At which round of the negotiation should phase 2 and phase 3 begin:
         self._phase_two_start_round = 30
-        self._phase_three_start_round = 185
+        self._phase_three_start_round = 196
         self._alpha = 0.9
         self._opponent_model: ExtendFrequencyOpponentModel = ExtendFrequencyOpponentModel.create()
         self._decrease_alpha = False
@@ -181,7 +181,7 @@ class TemplateAgent(DefaultParty):
     # execute a turn
     def _myTurn(self):
         # profile = self._profile.getProfile()
-        if  not self._last_received_bid is None:
+        if self._last_received_bid is not None:
             self._received_bids.append(self._last_received_bid)
         self._updateUtilSpace()
         self._updateCurrentPhase()
@@ -329,13 +329,13 @@ class TemplateAgent(DefaultParty):
         # Depending on how many rounds have already passed, adjust the constant value we ask for
         # Combination of time-dependent, constant utility and next bid
         if progress < 0.5:
-            return profile.getUtility(last_bid) > 0.85 and profile.getUtility(last_bid) > profile.getUtility(next_bid)
+            return profile.getUtility(last_bid) > 0.85 and profile.getUtility(last_bid) >= profile.getUtility(next_bid)
         elif progress < 0.7:
-            return profile.getUtility(last_bid) > 0.75 and profile.getUtility(last_bid) > profile.getUtility(next_bid)
+            return profile.getUtility(last_bid) > 0.75 and profile.getUtility(last_bid) >= profile.getUtility(next_bid)
         elif progress < 0.9:
-            return profile.getUtility(last_bid) > 0.65 and profile.getUtility(last_bid) > profile.getUtility(next_bid)
+            return profile.getUtility(last_bid) > 0.6 and profile.getUtility(last_bid) >= profile.getUtility(next_bid)
         else:
-            return profile.getUtility(last_bid) > 0.60 and profile.getUtility(last_bid) > profile.getUtility(next_bid)
+            return profile.getUtility(last_bid) > 0.5 and profile.getUtility(last_bid) >= profile.getUtility(next_bid)
 
     def random_bid_finder(self) -> Bid:
         # compose a list of all possible bids
