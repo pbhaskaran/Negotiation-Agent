@@ -345,15 +345,25 @@ class Group37_NegotiationAssignment_Agent(DefaultParty):
                 maximum = min(100, len(result))
                 return result[(randint(0, maximum - 1))]
 
-    # A bid we offer in phase three has higher concession rates, and we offer bids that the opponent previously offered
-    # to us, in hopes of settling the deal
     def phase_three_bid(self) -> Bid:
+        """
+        A bid we offer in phase three has higher concession rates, and we offer bids that the opponent previously
+        offered to us, in hopes of settling the deal.
+
+        @return the bid with the best utility for us that the opponent offered.
+        """
         self._received_bids = sorted(self._received_bids, key=lambda bid: self._profile.getProfile().getUtility(bid),
                                      reverse=True)
         return self._received_bids[0]
 
-    # method that checks if we would agree with an offer
     def _isGood(self, last_bid, next_bid) -> bool:
+        """
+        Method that checks if we would agree with an offer.
+
+        @param last_bid the last received bid.
+        @param next_bid the next bid we were about to make.
+        @return a boolean whether the last received bid is good enough to accept or not.
+        """
         if last_bid is None:
             return False
         profile = self._utilspace
@@ -373,6 +383,11 @@ class Group37_NegotiationAssignment_Agent(DefaultParty):
             return profile.getUtility(last_bid) > 0.5 and profile.getUtility(last_bid) >= profile.getUtility(next_bid)
 
     def random_bid_finder(self) -> Bid:
+        """
+        Get a random bid from a sample of 50 with a utility above 0.65 or 0.6 depending on the progress.
+
+        @return a bid with a utility greater than 0.65 or 0.6 depending on the progress
+        """
         # compose a list of all possible bids
         domain = self._profile.getProfile().getDomain()
         all_bids = AllBidsList(domain)
