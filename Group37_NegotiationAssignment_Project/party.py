@@ -1,0 +1,4 @@
+from Group37_NegotiationAssignment_Agent.Group37_NegotiationAssignment_Agent import Group37_NegotiationAssignment_Agent
+
+def party():
+    return Group37_NegotiationAssignment_Agent
