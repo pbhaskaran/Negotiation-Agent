@@ -1,7 +1,9 @@
+import math
 import os
 from collections import defaultdict
 
 import plotly.graph_objects as go
+
 
 def trace_special_points(special_points: list, accept_point: list, agents_involved: list):
     text = []
@@ -21,8 +23,8 @@ def trace_special_points(special_points: list, accept_point: list, agents_involv
             x=x,
             y=y,
             marker={"color": "red", "size": 12},
-            name = "Pareto Optimal Frontier",
-            legendgroup= "Pareto Optimal Points",
+            name="Pareto Optimal Frontier",
+            legendgroup="Pareto Optimal Points",
             hovertext=text,
             hoverinfo="text",
         )
@@ -56,6 +58,14 @@ def trace_special_points(special_points: list, accept_point: list, agents_involv
         )
     )
 
+    print("Euclidian distance to Nash Product: ", compute_euclidian_distance(
+        round(special_points[1][0], 3), round(special_points[1][1], 3),
+        round(accept_point[0], 3), round(accept_point[1], 3)))
+    print("Euclidian distance to Kalai Point: ", compute_euclidian_distance(
+        round(special_points[2][0], 3), round(special_points[2][1], 3),
+        round(accept_point[0], 3), round(accept_point[1], 3)))
+
+
     # If there is exactly one accepted bid (2 coordinates)
     if len(accept_point) == 2:
         text = []
@@ -66,7 +76,7 @@ def trace_special_points(special_points: list, accept_point: list, agents_involv
                 x=[accept_point[0]],
                 y=[accept_point[1]],
                 marker={"color": "green", "size": 12},
-                name= "Agreed upon bid" + ": [" + str(text[0]) + "]",
+                name="Agreed upon bid" + ": [" + str(text[0]) + "]",
                 hovertext=text,
                 hoverinfo="text",
             )
@@ -82,6 +92,10 @@ def trace_special_points(special_points: list, accept_point: list, agents_involv
     fig.update_xaxes(title_text="Utility of {}".format(xaxes_label), range=[0, 1], ticks="outside")
     fig.update_yaxes(title_text="Utility of {}".format(yaxes_label), range=[0, 1], ticks="outside")
     fig.write_html("results/pareto_plot.html")
+
+
+def compute_euclidian_distance(x1, y1, x2, y2):
+    return round(math.sqrt((x2 - x1) ** 2 + (y2 - y1) ** 2), 6)
 
 def plot_trace(results_trace: dict, plot_file: str):
     utilities = defaultdict(lambda: defaultdict(lambda: {"x": [], "y": [], "bids": []}))
