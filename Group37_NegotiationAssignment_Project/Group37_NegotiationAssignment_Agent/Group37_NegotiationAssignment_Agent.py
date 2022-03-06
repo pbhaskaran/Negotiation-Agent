@@ -31,10 +31,10 @@ from geniusweb.bidspace.BidsWithUtility import BidsWithUtility
 from geniusweb.bidspace.Interval import Interval
 from decimal import Decimal
 
-from Group37_NegotiationAssignment_Project.Group37_NegotiationAssignment_Agent.ExtendFrequencyOpponentModel import ExtendFrequencyOpponentModel
+from agents.template_agent.ExtendFrequencyOpponentModel import ExtendFrequencyOpponentModel
 
 
-class Group37_NegotiationAssignment_Agent(DefaultParty):
+class TemplateAgent(DefaultParty):
     """
     Template agent that offers random bids until a bid with sufficient utility is offered.
     """
@@ -247,13 +247,11 @@ class Group37_NegotiationAssignment_Agent(DefaultParty):
         if self._progress.getCurrentRound() < round((self._phase_three_start_round + self._phase_two_start_round) / 2):
             # First we randomly find some bids in our BidSpace. The upper bound is found applying Optimal Bid Strategy
             # lower bid is decreased with alpha over time.
-            lower_bound = self._alpha - 0.05
-            upper_bound = self._alpha + 0.05
-                #num_remaining_rounds = 200 - self._progress.getCurrentRound()
-                #cur_exp_optimal_utility = Decimal(self._expected_utilities[num_remaining_rounds])
+            lower_bound = self._alpha - 0.04
+            upper_bound = (self._alpha + 0.05 + self._expected_utilities[200 - self._progress.getCurrentRound()]) / 2
             potential_bids = self._bidutils.getBids(Interval(Decimal(lower_bound), Decimal(upper_bound)))
             if self._decrease_alpha:
-                self._alpha -= 0.002
+                self._alpha -= 0.0025
 
             # Now we split our potential bids into four sets of fortunate, nice, concession bids, and silent bids
             fortunate_bids = []
@@ -290,17 +288,17 @@ class Group37_NegotiationAssignment_Agent(DefaultParty):
             else:
                 self._decrease_alpha = True
                 # Extreme worse case scenario we resort to unfortunate or selfish moves
-                potential_bids.get(randint(0, potential_bids.size() - 1))
+                return potential_bids.get(randint(0, potential_bids.size() - 1))
         else:
             # next half of the rounds we slowly start conceding to the opponent
             #     lower_bound = self._alpha - 0.05
             #     num_remaining_rounds = 200 - self._progress.getCurrentRound()
             #     upper_bound = Decimal(self._expected_utilities[num_remaining_rounds])
             # find bids within the range
-            lower_bound = self._alpha - 0.05
+            lower_bound = self._alpha - 0.04
             upper_bound = (self._alpha + 0.05 + self._expected_utilities[200 - self._progress.getCurrentRound()]) / 2
-            print(upper_bound)
             potential_bids = self._bidutils.getBids(Interval(Decimal(lower_bound), Decimal(upper_bound)))
+
             self._alpha -= 0.002
             result = sorted(potential_bids, key=lambda bid: self._opponent_model.getUtility(bid),
                             reverse=True)
