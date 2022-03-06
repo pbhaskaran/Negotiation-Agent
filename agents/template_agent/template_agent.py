@@ -323,6 +323,9 @@ class TemplateAgent(DefaultParty):
             return False
         profile = self._utilspace
         progress = self._progress.get(0)
+        # At any point if the utility is better than 0.9 then we accept
+        if profile.getUtility(last_bid) > 0.9:
+            return True
         # Depending on how many rounds have already passed, adjust the constant value we ask for
         # Combination of time-dependent, constant utility and next bid
         if progress < 0.5:
