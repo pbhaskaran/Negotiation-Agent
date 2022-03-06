@@ -158,9 +158,11 @@ class Group37_NegotiationAssignment_Agent(DefaultParty):
 
     # give a description of your agent
     def getDescription(self) -> str:
-        return "Template agent for Collaborative AI course"
+        return "Agent 37 for the Collaborative AI Course"
 
-    # This method updates the current_phase attribute of the agent
+    """
+    This method updates the current_phase attribute of the agent.
+    """
     def _updateCurrentPhase(self):
         current_round = self._progress.getCurrentRound()
         if current_round >= self._phase_two_start_round:
@@ -168,9 +170,11 @@ class Group37_NegotiationAssignment_Agent(DefaultParty):
         if current_round >= self._phase_three_start_round:
             self._current_phase = 3
 
-    # The utilspace attribute is casted from the Profile object to that of a LinearAdditive object
-    # we need to do this casting so that we can use the BidsWithUtility object (in its constructor it takes a
-    # LinearAdditive) object
+    """
+    This method updates the agents _utilspace attribute. The utilspace attribute is casted from the Profile object to 
+    that of a LinearAdditive object. We need to do this casting so that we can use the BidsWithUtility object 
+    (in its constructor it takes a LinearAdditive). 
+    """
     def _updateUtilSpace(self) -> LinearAdditive:
         newutilspace = self._profile.getProfile()
         if not newutilspace == self._utilspace:
@@ -178,6 +182,11 @@ class Group37_NegotiationAssignment_Agent(DefaultParty):
             self._bidutils = BidsWithUtility.create(self._utilspace)
         return self._utilspace
 
+    """
+    This method sets the agents _expected_utilities attribute. Inspired from the Optimal Bidding Strategy paper, 
+    we compute the optimal/expected utility using a recurrence equation that is dependent on the agents reservation 
+    value. In the case that the agent has no specific reservation utility, we assume its 0. 
+    """
     def set_optimal_expected_utility(self):
         expected_utilities = []
         # if agent has a reservation bid, store it in expected_utilities_list
@@ -188,21 +197,26 @@ class Group37_NegotiationAssignment_Agent(DefaultParty):
         else:
             expected_utilities.append(0)
 
-            # using function new_utility = 0.25*(previous_utility)^2
+            # Using function new_utility = 0.25*(previous_utility)^2
         for i in range(1, 201):
             prev = expected_utilities[i - 1]
             util = 0.25 * (prev + 1.0) ** 2
             expected_utilities.append(util)
         self._expected_utilities = expected_utilities
 
-    # execute a turn
+    """
+    This method decides what Agent 37's next move is. This can either be to accept the previously offered bid, 
+    or provide a counter-offer bid (i.e following SOAP protocol). It follows the explained BOA implementation in the 
+    report.
+    """
     def _myTurn(self):
         # profile = self._profile.getProfile()
         if self._last_received_bid is not None:
             self._received_bids.append(self._last_received_bid)
         self._updateUtilSpace()
         self._updateCurrentPhase()
-        # If we are making the first bid, we make the bid with the highest possible utility for ourselves (Agent Smith)
+        # If we are making the first bid, we make the bid with the highest possible utility for ourselves
+        # (inspired from Agent Smith)
         if self._last_received_bid is None:
             next_bid = self._bidutils.getExtremeBid(True)
             self._last_offered_bid = next_bid
