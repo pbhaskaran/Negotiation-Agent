@@ -36,10 +36,28 @@ from agents.template_agent.ExtendFrequencyOpponentModel import ExtendFrequencyOp
 
 class Group37_NegotiationAssignment_Agent(DefaultParty):
     """
-    Template agent that offers random bids until a bid with sufficient utility is offered.
+    Agent 37 offers bids following the BOA framework. It uses Frequency Opponent Modelling and a mixed approach
+    for the Acceptance Criteria. Finally, for its Bidding Strategy it follows a three phase approach to attempt
+    to make fair and pareto optimal bids.
     """
 
     def __init__(self):
+        """
+        @param _last_offered_bid The latest bid offered by us to the opponent
+        @param _last_received_bid The latest bid offered by the opponent to us
+        @param _utilspace The utility space of bids based on the domain
+        @param _bidutils The object used to explore the bidspace to find bids
+        @param _expected_utilities An array of length equal to the number of rounds, that stores all the optimal
+            utilities for us for a given round
+        @param opponent_util_space The utility space of bids based on the domain but for the opponent
+        @param _current_phase Number keeping track of the current phase of the bidding strategy
+        @param _phase_two_start_round Number describing at which round phase 2 begins for the bidding strategy
+        @param _phase_three_start_round Number describing at which round phase 3 begins for the bidding strategy
+        @param _opponent_model The ExtendedFrequencyModel object that is used to compute estimated bid utilities
+            for the opponent
+        @param _decrease_alpha If true we concede our utility range when searching for potential bids
+        """
+
         super().__init__()
         self.getReporter().log(logging.INFO, "party is initialized")
         self._profile: ProfileInterface = None
