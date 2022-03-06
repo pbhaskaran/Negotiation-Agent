@@ -115,8 +115,7 @@ class Group37_NegotiationAssignment_Agent(DefaultParty):
             if isinstance(action, Offer):
                 # only learn the opponent for the first 25 rounds (phase 1)
                 if self._current_phase == 1:
-                    self._opponent_model = self._opponent_model.WithAction(action, self._last_received_bid,
-                                                                           self._progress)
+                    self._opponent_model = self._opponent_model.WithAction(action, self._last_received_bid)
                 self._last_received_bid = cast(Offer, action).getBid()
 
         # YourTurn notifies you that it is your turn to act

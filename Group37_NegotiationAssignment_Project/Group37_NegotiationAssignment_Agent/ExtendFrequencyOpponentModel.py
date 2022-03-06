@@ -55,14 +55,18 @@ class ExtendFrequencyOpponentModel(FrequencyOpponentModel):
     def With(self, newDomain: Domain, newResBid: Optional[Bid]) -> "ExtendFrequencyOpponentModel":
         if newDomain == None:
             raise ValueError("domain is not initialized")
-        # FIXME merge already available frequencies?
         return ExtendFrequencyOpponentModel(newDomain,
                                       {iss: {} for iss in newDomain.getIssues()},
                                       {iss: 10.0 for iss in newDomain.getIssues()},
                                       0, newResBid)
 
     # Override
-    def WithAction(self, action: Action, lastBid: Bid, progress: Progress) -> "ExtendFrequencyOpponentModel":
+    def WithAction(self, action: Action, lastBid: Bid) -> "ExtendFrequencyOpponentModel":
+        '''
+        @param action Action that is being done
+        @param lastBid Previous bit to compare to
+        @return Updated frequency opponent model
+        '''
         if self._domain == None:
             raise ValueError("domain is not initialized")
 
@@ -101,6 +105,10 @@ class ExtendFrequencyOpponentModel(FrequencyOpponentModel):
 
     # Override
     def getUtility(self, bid: Bid) -> Decimal:
+        '''
+        @param bid bid we want the utility for
+        @return decimal representation of the utility for that bid, using issue weights and vlaue weights
+        '''
         if self._domain == None:
             raise ValueError("domain is not initialized")
         if self._totalBids == 0:
@@ -134,5 +142,6 @@ class ExtendFrequencyOpponentModel(FrequencyOpponentModel):
     def _getIssueWeight(self, issue: str) -> Decimal:
         '''
                @param issue the issue we want the weight of
+               @return normalized weight of the issue we're interested in
                '''
         return round(self._issueWeights[issue] / sum(self._issueWeights.values()), ExtendFrequencyOpponentModel._DECIMALS)
