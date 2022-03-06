@@ -241,6 +241,9 @@ class Group37_NegotiationAssignment_Agent(DefaultParty):
     # A bid we offer in phase one is quite selfish with high utility for ourselves (i.e Optimal Bids strategy),
     # this way the opponent can learn our profile. We also attempt to learn our opponent model during this phase
     def phase_one_bid(self) -> Bid:
+        ''''
+        @return random bid from list of potential bids
+        '''
         num_remaining_rounds = 200 - self._progress.getCurrentRound()
         cur_exp_optimal_utility = Decimal(self._expected_utilities[num_remaining_rounds])
 
@@ -258,6 +261,9 @@ class Group37_NegotiationAssignment_Agent(DefaultParty):
     # A bid we offer in phase two is time concession based: with a mix between the Optimal Bid strategy (ignoring
     # opponent model) and the opponents desires (i.e including the Opponent Frequency Model)
     def phase_two_bid(self) -> Bid:
+        ''''
+        @return bid corresponding to the appropriate utility and time
+        '''
         # In the first half, we attempt to first make fortunate moves, then nice moves, and if we cannot find
         # any bid in these categories, we concede. In other words, we completely ignore selfish or unfortunate moves.
         # We begin our concession halfway through phase 2
