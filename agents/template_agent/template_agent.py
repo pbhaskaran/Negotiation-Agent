@@ -115,16 +115,20 @@ class TemplateAgent(DefaultParty):
     def _myTurn(self):
         # Get our next bid
         next_bid = self._findBid()
+        domain = self._profile.getProfile().getDomain()
         # check if the last received offer if the opponent is good enough
-        if self._isGood(self._last_received_bid, next_bid):
-            # if so, accept the offer
-            action = Accept(self._me, self._last_received_bid)
-        else:
-            # if not, propose bid as counter offer
-            action = Offer(self._me, next_bid)
+        if self._last_received_bid is not None:
+            if self._isGood(self._last_received_bid, next_bid):
+                # if so, accept the offer
+                action = Accept(self._me, self._last_received_bid)
+            else:
+                # if not, propose bid as counter offer
+                action = Offer(self._me, next_bid)
 
         # send the action
-        self.getConnection().send(action)
+            self.getConnection().send(action)
+        else:
+            self.getConnection().send(Offer(self._me, next_bid))
 
     # method that checks if we would agree with an offer
     def _isGood(self, last_bid: Bid, next_bid: Bid) -> bool:
@@ -143,7 +147,7 @@ class TemplateAgent(DefaultParty):
         elif progress < 0.9:
             return profile.getUtility(last_bid) > 0.6 and profile.getUtility(last_bid) > profile.getUtility(next_bid)
         else:
-            return profile.getUtility(last_bid) > 0.5 and profile.getUtility(last_bid) > profile.getUtility(next_bid)
+            return profile.getUtility(last_bid) > 0.5 and profile.getUtility(last_bid) >= profile.getUtility(next_bid)
 
     def _findBid(self) -> Bid:
         # compose a list of all possible bids
@@ -153,6 +157,8 @@ class TemplateAgent(DefaultParty):
         profile = self._profile.getProfile()
         progress = self._progress.get(0)
         best_bid = all_bids.get(randint(0, all_bids.size() - 1))
+        if progress == 0:
+            return all_bids.get(0)
 
         # In the first quarter of the game we offer random bids that have good utility for us while reading the opponent to estimate their utility
         if progress < 0.25:
@@ -169,6 +175,7 @@ class TemplateAgent(DefaultParty):
                 bid = all_bids.get(randint(0, all_bids.size() - 1))
                 if profile.getUtility(bid) > profile.getUtility(best_bid):
                     best_bid = bid
+                    return best_bid
                 if self._isGood(bid, self._last_received_bid) and self._opponent_model.getUtility(bid) > 0.6:
                     print(self._opponent_model.getUtility(bid))
                     break

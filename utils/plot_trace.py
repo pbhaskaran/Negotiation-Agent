@@ -1,14 +1,16 @@
+import math
 import os
 from collections import defaultdict
 
 import plotly.graph_objects as go
 
-def trace_pareto(pareto_points: list, accept_point: list, agents_involved: list):
+
+def trace_special_points(special_points: list, accept_point: list, agents_involved: list):
     text = []
     x = []
     y = []
     # Keep track of all the pareto optimal points and their coordinates for hover over text
-    for p in pareto_points:
+    for p in special_points[0]:
         x.append(p[0])
         y.append(p[1])
         text.append(str(round(p[0], 3)) + ", " + str(round(p[1], 3)))
@@ -21,12 +23,49 @@ def trace_pareto(pareto_points: list, accept_point: list, agents_involved: list)
             x=x,
             y=y,
             marker={"color": "red", "size": 12},
-            name = "Pareto Optimal Frontier",
-            legendgroup= "Pareto Optimal Points",
+            name="Pareto Optimal Frontier",
+            legendgroup="Pareto Optimal Points",
             hovertext=text,
             hoverinfo="text",
         )
     )
+    # Add the Nash product point
+    nash_text = []
+    nash_text.append(str(round(special_points[1][0], 3)) + " , " + str(round(special_points[1][1], 3)))
+    fig.add_trace(
+        go.Scatter(
+            mode="markers",
+            x=[special_points[1][0]],
+            y=[special_points[1][1]],
+            marker={"color": "blue", "size": 13},
+            name="Nash Product" + ": [" + str(nash_text[0]) + "]",
+            hovertext=nash_text,
+            hoverinfo="text",
+        )
+    )
+    # Add the Kalai point
+    kalai_text = []
+    kalai_text.append(str(round(special_points[2][0], 3)) + " , " + str(round(special_points[2][1], 3)))
+    fig.add_trace(
+        go.Scatter(
+            mode="markers",
+            x=[special_points[2][0]],
+            y=[special_points[2][1]],
+            marker={"color": "black", "size": 13},
+            name="Kalai Point" + ": [" + str(kalai_text[0]) + "]",
+            hovertext=kalai_text,
+            hoverinfo="text",
+        )
+    )
+
+    print("Euclidian distance to Nash Product: ", compute_euclidian_distance(
+        round(special_points[1][0], 3), round(special_points[1][1], 3),
+        round(accept_point[0], 3), round(accept_point[1], 3)))
+    print("Euclidian distance to Kalai Point: ", compute_euclidian_distance(
+        round(special_points[2][0], 3), round(special_points[2][1], 3),
+        round(accept_point[0], 3), round(accept_point[1], 3)))
+
+
     # If there is exactly one accepted bid (2 coordinates)
     if len(accept_point) == 2:
         text = []
@@ -37,7 +76,7 @@ def trace_pareto(pareto_points: list, accept_point: list, agents_involved: list)
                 x=[accept_point[0]],
                 y=[accept_point[1]],
                 marker={"color": "green", "size": 12},
-                name= "Agreed upon bid",
+                name="Agreed upon bid" + ": [" + str(text[0]) + "]",
                 hovertext=text,
                 hoverinfo="text",
             )
@@ -47,12 +86,16 @@ def trace_pareto(pareto_points: list, accept_point: list, agents_involved: list)
         height=800,
     )
     # Get the name of the agents
-    xaxes_label = agents_involved[0].split("_")[1]
-    yaxes_label = agents_involved[1].split("_")[1]
+    xaxes_label = agents_involved[0].split(".")[3]
+    yaxes_label = agents_involved[1].split(".")[3]
     # Update the axes and write to html file
-    fig.update_xaxes(title_text="Utility of {} agent".format(xaxes_label), range=[0, 1], ticks="outside")
-    fig.update_yaxes(title_text="Utility of {} agent".format(yaxes_label), range=[0, 1], ticks="outside")
+    fig.update_xaxes(title_text="Utility of {}".format(xaxes_label), range=[0, 1], ticks="outside")
+    fig.update_yaxes(title_text="Utility of {}".format(yaxes_label), range=[0, 1], ticks="outside")
     fig.write_html("results/pareto_plot.html")
+
+
+def compute_euclidian_distance(x1, y1, x2, y2):
+    return round(math.sqrt((x2 - x1) ** 2 + (y2 - y1) ** 2), 6)
 
 def plot_trace(results_trace: dict, plot_file: str):
     utilities = defaultdict(lambda: defaultdict(lambda: {"x": [], "y": [], "bids": []}))
